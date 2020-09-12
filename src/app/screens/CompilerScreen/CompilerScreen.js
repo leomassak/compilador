@@ -3,35 +3,21 @@
 import React, { useState } from 'react';
 
 import './styles.scss';
+import { pegaToken } from '../../functions/pegaToken';
 
 function CompilerScreen() {
   // const [fileRows, setRows] = useState('');
+  const [tokenList, setTokenList] = useState([]);
 
   const COMANDOS_ESPECIAIS = {
     PULA_LINHA: '\n',
     ESPAÇO: ' ',
-  }
+  };
 
   const INICIO_COMENTARIO = {
     BARRA: 1,
     CHAVES: 2,
-  }
-
-  async function handleFileSelector(event) {
-    if (event.target.files[0].type === 'text/plain') {
-      const reader = new FileReader();
-      if (reader) {
-        reader.readAsText(event.target.files[0]);
-        event.target.value = '';
-      }
-      reader.onload = async (e) => {
-        const file = e.target.result;
-        console.log(file);
-        test(file);
-      };
-    } else alert('Este tipo de arquivo não é suportado!');
-  }
-  
+  };
 
   function test(string) {
     let linha = 1;
@@ -41,9 +27,7 @@ function CompilerScreen() {
 
     for (let i = 0; i < string.length; i += 1) {
       if (string[i] !== COMANDOS_ESPECIAIS.ESPAÇO || ativouComentario) {
-      
         if (string[i] === '/' || string[i] === '{' || ativouComentario) {
-
           if (!ativouComentario && string[i] === '/') {
             if (string[i + 1] === '*') {
               console.log('começou comentário');
@@ -54,9 +38,11 @@ function CompilerScreen() {
               console.log('ERRO');
               break;
             }
-          }
-
-          else if (ativouComentario && tipoComentario === INICIO_COMENTARIO.BARRA && string[i] === '*') {
+          } else if (
+            ativouComentario &&
+            tipoComentario === INICIO_COMENTARIO.BARRA &&
+            string[i] === '*'
+          ) {
             if (string[i + 1] === '/') {
               console.log('comentário:', comentario);
               ativouComentario = false;
@@ -66,32 +52,33 @@ function CompilerScreen() {
             } else {
               comentario += string[i];
             }
-          }
-
-          else if (!ativouComentario && string[i] === '{') {
+          } else if (!ativouComentario && string[i] === '{') {
             ativouComentario = true;
             tipoComentario = 2;
-          }
-
-          else if (ativouComentario && tipoComentario === INICIO_COMENTARIO.CHAVES && string[i] === '}') {
+          } else if (
+            ativouComentario &&
+            tipoComentario === INICIO_COMENTARIO.CHAVES &&
+            string[i] === '}'
+          ) {
             console.log('comentário:', comentario);
             ativouComentario = false;
-            comentario = ''
+            comentario = '';
             tipoComentario = null;
-          }
-
-          else {
+          } else {
             comentario += string[i];
           }
-        }
-
-        else if (string[i] === '/' || string[i] === '}') {
+        } else if (string[i] === '/' || string[i] === '}') {
           console.log('ERRO');
           break;
-        }
-        
-        else {
+        } else {
           console.log(string[i]);
+          const response = pegaToken(string[i], i, string);
+          i = response.position;
+          setTokenList([
+            ...tokenList,
+            { simbol: response.simbol, lexema: response.lexema },
+          ]);
+          console.log('token', response);
         }
 
         if (string[i] === COMANDOS_ESPECIAIS.PULA_LINHA) {
@@ -101,6 +88,24 @@ function CompilerScreen() {
       }
     }
     console.log(linha);
+  }
+
+  async function handleFileSelector(event) {
+    if (event.target.files[0].type === 'text/plain') {
+      // eslint-disable-next-line no-undef
+      const reader = new FileReader();
+      if (reader) {
+        reader.readAsText(event.target.files[0]);
+        event.target.value = '';
+      }
+      reader.onload = async (e) => {
+        const file = e.target.result;
+        console.log(file);
+        test(file);
+      };
+      // eslint-disable-next-line no-alert
+      // eslint-disable-next-line no-undef
+    } else alert('Este tipo de arquivo não é suportado!');
   }
 
   return (
