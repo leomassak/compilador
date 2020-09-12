@@ -27,7 +27,9 @@ function CompilerScreen() {
 
     for (let i = 0; i < string.length; i += 1) {
       if (string[i] !== COMANDOS_ESPECIAIS.ESPAÇO || ativouComentario) {
+
         if (string[i] === '/' || string[i] === '{' || ativouComentario) {
+
           if (!ativouComentario && string[i] === '/') {
             if (string[i + 1] === '*') {
               console.log('começou comentário');
@@ -67,10 +69,14 @@ function CompilerScreen() {
           } else {
             comentario += string[i];
           }
-        } else if (string[i] === '/' || string[i] === '}') {
+        }
+        
+        else if (string[i] === '/' || string[i] === '}') {
           console.log('ERRO');
           break;
-        } else {
+        }
+        
+        else if (string[i] !== COMANDOS_ESPECIAIS.PULA_LINHA && string[i].charCodeAt() !== 13){
           console.log(string[i]);
           const response = pegaToken(string[i], i, string);
           i = response.position;
@@ -82,7 +88,6 @@ function CompilerScreen() {
         }
 
         if (string[i] === COMANDOS_ESPECIAIS.PULA_LINHA) {
-          console.log('pulou linha');
           linha += 1;
         }
       }
