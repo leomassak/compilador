@@ -5,7 +5,17 @@ import React, { useState } from 'react';
 import './styles.scss';
 
 function CompilerScreen() {
-  const [fileRows, setRows] = useState([]);
+  // const [fileRows, setRows] = useState('');
+
+  const COMANDOS_ESPECIAIS = {
+    PULA_LINHA: '\n',
+    ESPAÇO: ' ',
+  }
+
+  const INICIO_COMENTARIO = {
+    BARRA: 1,
+    CHAVES: 2,
+  }
 
   async function handleFileSelector(event) {
     if (event.target.files[0].type === 'text/plain') {
@@ -15,11 +25,82 @@ function CompilerScreen() {
         event.target.value = '';
       }
       reader.onload = async (e) => {
-        const rows = e.target.result.split('\n');
-        console.log(rows);
-        setRows(rows);
+        const file = e.target.result;
+        console.log(file);
+        test(file);
       };
     } else alert('Este tipo de arquivo não é suportado!');
+  }
+  
+
+  function test(string) {
+    let linha = 1;
+    let ativouComentario = false;
+    let comentario = '';
+    let tipoComentario = null;
+
+    for (let i = 0; i < string.length; i += 1) {
+      if (string[i] !== COMANDOS_ESPECIAIS.ESPAÇO || ativouComentario) {
+      
+        if (string[i] === '/' || string[i] === '{' || ativouComentario) {
+
+          if (!ativouComentario && string[i] === '/') {
+            if (string[i + 1] === '*') {
+              console.log('começou comentário');
+              ativouComentario = true;
+              i += 1;
+              tipoComentario = 1;
+            } else {
+              console.log('ERRO');
+              break;
+            }
+          }
+
+          else if (ativouComentario && tipoComentario === INICIO_COMENTARIO.BARRA && string[i] === '*') {
+            if (string[i + 1] === '/') {
+              console.log('comentário:', comentario);
+              ativouComentario = false;
+              comentario = '';
+              tipoComentario = null;
+              i += 1;
+            } else {
+              comentario += string[i];
+            }
+          }
+
+          else if (!ativouComentario && string[i] === '{') {
+            ativouComentario = true;
+            tipoComentario = 2;
+          }
+
+          else if (ativouComentario && tipoComentario === INICIO_COMENTARIO.CHAVES && string[i] === '}') {
+            console.log('comentário:', comentario);
+            ativouComentario = false;
+            comentario = ''
+            tipoComentario = null;
+          }
+
+          else {
+            comentario += string[i];
+          }
+        }
+
+        else if (string[i] === '/' || string[i] === '}') {
+          console.log('ERRO');
+          break;
+        }
+        
+        else {
+          console.log(string[i]);
+        }
+
+        if (string[i] === COMANDOS_ESPECIAIS.PULA_LINHA) {
+          console.log('pulou linha');
+          linha += 1;
+        }
+      }
+    }
+    console.log(linha);
   }
 
   return (
