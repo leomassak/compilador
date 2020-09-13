@@ -7,7 +7,7 @@ function trataDigito(position, file) {
     position += 1;
   }
 
-  return { symbol: 'snumero', lexeme: digit, position };
+  return { symbol: 'snumero', lexeme: digit, position: position - 1 };
 }
 
 function trataIdentificadorEPalavraReservada(position, file) {
@@ -30,16 +30,16 @@ function trataIdentificadorEPalavraReservada(position, file) {
       symbol = 'sentao';
       break;
     case 'senao':
-      symbol = 'sentao';
+      symbol = 'senao';
       break;
     case 'enquanto':
-      symbol = 'ssenao';
+      symbol = 'seenquanto';
       break;
     case 'faca':
       symbol = 'sfaca';
       break;
-    case 'início':
-      symbol = 'sinício';
+    case 'inicio':
+      symbol = 'sinicio';
       break;
     case 'fim':
       symbol = 'sfim';
