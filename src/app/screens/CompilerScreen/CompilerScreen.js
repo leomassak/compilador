@@ -103,12 +103,18 @@ function CompilerScreen() {
         event.target.value = '';
       }
       reader.onload = async (e) => {
+        handleFileRemove();
         const file = e.target.result;
-        console.log(file);
         await lexicalAnalysis(file);
         setDisplayList(true);
       };
     } else alert('Este tipo de arquivo não é suportado!');
+  }
+
+  async function handleFileRemove() {
+    setTokenList([]);
+    setHasError(0);
+    setDisplayList(false)
   }
 
   return (
@@ -122,27 +128,34 @@ function CompilerScreen() {
               id="file-button"
               onChange={handleFileSelector}
             />
-            <label htmlFor="file-button">Arquivo</label>
+            <label htmlFor="file-button">Inserir Arquivo</label>
           </li>
           <li>
-            <button type="button">Executar</button>
-          </li>
-          <li>
-            <button type="button">Sobre</button>
+            <button
+              type="button"
+              onClick={handleFileRemove}
+            >
+              Limpar
+            </button>
           </li>
         </ul>
       </div>
       <div className="main-panel">
         {displayList && tokenList.map((item, index) => (
-          <p
-            key={index}
-          >
-            {`Símbolo: ${item.symbol}\nLexema: ${item.lexeme}\n`}
-          </p>
+          <>
+            <p className="panel-text-lines">
+              {`Símbolo -> ${item.symbol}`}
+            </p>
+            <p className="panel-text-lines">
+              {`Lexema -> ${item.lexeme}`}
+            </p>
+            <br />
+          </>
         ))}
         {hasError !== 0 && (
-          <p>
+          <p className="panel-error-text-lines">
             {`Erro na linha ${hasError}`}
+            <br />
           </p>
         )}
       </div>
