@@ -8,96 +8,95 @@ import { pegaToken } from '../../functions/pegaToken';
 function CompilerScreen() {
   // const [fileRows, setRows] = useState('');
   const [tokenList, setTokenList] = useState([]);
+  const [hasError, setHasError] = useState(0);
+  const [displayList, setDisplayList] = useState(false);
 
-  const COMANDOS_ESPECIAIS = {
-    PULA_LINHA: '\n',
-    ESPAÇO: ' ',
+  const ESPECIAL_COMMANDS = {
+    SKIP_LINE: '\n',
+    SPACE: ' ',
   };
 
-  const INICIO_COMENTARIO = {
-    BARRA: 1,
-    CHAVES: 2,
+  const INIT_COMMENT = {
+    SLASH: 1,
+    KEY: 2,
   };
 
-  function test(string) {
-    let linha = 1;
-    let ativouComentario = false;
-    let comentario = '';
-    let tipoComentario = null;
+  function lexicalAnalysis(file) {
+    let line = 1;
+    let isComment = false;
+    let comment = '';
+    let commentType = null;
 
-    for (let i = 0; i < string.length; i += 1) {
-      if (string[i] !== COMANDOS_ESPECIAIS.ESPAÇO || ativouComentario) {
+    for (let i = 0; i < file.length; i += 1) {
+      
+      if (file[i] !== ESPECIAL_COMMANDS.SPACE || isComment) {
+        
+        if (file[i] === '/' || file[i] === '{' || isComment) {
 
-        if (string[i] === '/' || string[i] === '{' || ativouComentario) {
-
-          if (!ativouComentario && string[i] === '/') {
-            if (string[i + 1] === '*') {
-              console.log('começou comentário');
-              ativouComentario = true;
+          if (!isComment && file[i] === '/') {
+            if (file[i + 1] === '*') {
+              isComment = true;
               i += 1;
-              tipoComentario = 1;
+              commentType = 1;
             } else {
-              console.log('ERRO');
+              setHasError(line);
               break;
             }
-          } else if (
-            ativouComentario &&
-            tipoComentario === INICIO_COMENTARIO.BARRA &&
-            string[i] === '*'
-          ) {
-            if (string[i + 1] === '/') {
-              console.log('comentário:', comentario);
-              ativouComentario = false;
-              comentario = '';
-              tipoComentario = null;
+          }
+          
+          else if (isComment && commentType === INIT_COMMENT.SLASH && file[i] === '*') {
+            if (file[i + 1] === '/') {
+              console.log('comentário:', comment);
+              isComment = false;
+              comment = '';
+              commentType = null;
               i += 1;
             } else {
-              comentario += string[i];
+              comment += file[i];
             }
-          } else if (!ativouComentario && string[i] === '{') {
-            ativouComentario = true;
-            tipoComentario = 2;
-          } else if (
-            ativouComentario &&
-            tipoComentario === INICIO_COMENTARIO.CHAVES &&
-            string[i] === '}'
-          ) {
-            console.log('comentário:', comentario);
-            ativouComentario = false;
-            comentario = '';
-            tipoComentario = null;
+          }
+          
+          else if (!isComment && file[i] === '{') {
+            isComment = true;
+            commentType = 2;
+          }
+          
+          else if (isComment && commentType === INIT_COMMENT.KEY && file[i] === '}') {
+            console.log('comentário:', comment);
+            isComment = false;
+            comment = '';
+            commentType = null;
           } else {
-            comentario += string[i];
+            comment += file[i];
           }
         }
         
-        else if (string[i] === '/' || string[i] === '}') {
-          console.log('ERRO');
+        else if (file[i] === '/' || file[i] === '}') {
+          setHasError(line);
           break;
         }
         
-        else if (string[i] !== COMANDOS_ESPECIAIS.PULA_LINHA && string[i].charCodeAt() !== 13){
-          console.log(string[i]);
-          const response = pegaToken(string[i], i, string);
-          i = response.position;
-          setTokenList([
-            ...tokenList,
-            { simbol: response.simbol, lexema: response.lexema },
-          ]);
-          console.log('token', response);
+        else if (file[i] !== ESPECIAL_COMMANDS.SKIP_LINE && file[i].charCodeAt() !== 13) {
+          const response = pegaToken(file[i], i, file);
+          if (response.lexeme === 'Erro') {
+            setHasError(line);
+            break;
+          }
+          else {
+            i = response.position;
+            setTokenList(tokenList => tokenList.concat({ symbol: response.symbol, lexeme: response.lexeme }))
+          }
         }
 
-        if (string[i] === COMANDOS_ESPECIAIS.PULA_LINHA) {
-          linha += 1;
+        if (file[i] === ESPECIAL_COMMANDS.SKIP_LINE) {
+          line += 1;
         }
       }
     }
-    console.log(linha);
   }
 
   async function handleFileSelector(event) {
     if (event.target.files[0].type === 'text/plain') {
-      // eslint-disable-next-line no-undef
       const reader = new FileReader();
       if (reader) {
         reader.readAsText(event.target.files[0]);
@@ -106,10 +105,9 @@ function CompilerScreen() {
       reader.onload = async (e) => {
         const file = e.target.result;
         console.log(file);
-        test(file);
+        await lexicalAnalysis(file);
+        setDisplayList(true);
       };
-      // eslint-disable-next-line no-alert
-      // eslint-disable-next-line no-undef
     } else alert('Este tipo de arquivo não é suportado!');
   }
 
@@ -134,7 +132,20 @@ function CompilerScreen() {
           </li>
         </ul>
       </div>
-      <div className="main-panel" />
+      <div className="main-panel">
+        {displayList && tokenList.map((item, index) => (
+          <p
+            key={index}
+          >
+            {`Símbolo: ${item.symbol}\nLexema: ${item.lexeme}\n`}
+          </p>
+        ))}
+        {hasError !== 0 && (
+          <p>
+            {`Erro na linha ${hasError}`}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
