@@ -26,6 +26,7 @@ function CompilerScreen() {
     let isComment = false;
     let comment = '';
     let commentType = null;
+    let commentLines = 0;
 
     for (let i = 0; i < file.length; i += 1) {
       
@@ -50,6 +51,7 @@ function CompilerScreen() {
               isComment = false;
               comment = '';
               commentType = null;
+              commentLines = 0;
               i += 1;
             } else {
               comment += file[i];
@@ -66,6 +68,7 @@ function CompilerScreen() {
             isComment = false;
             comment = '';
             commentType = null;
+            commentLines = 0;
           } else {
             comment += file[i];
           }
@@ -90,9 +93,12 @@ function CompilerScreen() {
 
         if (file[i] === ESPECIAL_COMMANDS.SKIP_LINE) {
           line += 1;
+          if (isComment) commentLines += 1;
         }
       }
     }
+
+    if (isComment) setHasError(line - commentLines);
   }
 
   async function handleFileSelector(event) {
