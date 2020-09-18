@@ -14,6 +14,7 @@ function CompilerScreen() {
   const ESPECIAL_COMMANDS = {
     SKIP_LINE: '\n',
     SPACE: ' ',
+    TAB: 9,
   };
 
   const INIT_COMMENT = {
@@ -29,8 +30,7 @@ function CompilerScreen() {
     let commentLines = 0;
 
     for (let i = 0; i < file.length; i += 1) {
-      
-      if (file[i] !== ESPECIAL_COMMANDS.SPACE || isComment) {
+      if (file[i].charCodeAt() !== ESPECIAL_COMMANDS.TAB && (file[i] !== ESPECIAL_COMMANDS.SPACE || isComment)) {
         
         if (file[i] === '/' || file[i] === '{' || isComment) {
 
