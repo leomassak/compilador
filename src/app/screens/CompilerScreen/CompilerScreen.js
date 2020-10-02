@@ -6,7 +6,6 @@ import './styles.scss';
 import { pegaToken } from '../../functions/pegaToken';
 
 function CompilerScreen() {
-  // const [fileRows, setRows] = useState('');
   const [tokenList, setTokenList] = useState([]);
   const [hasError, setHasError] = useState(0);
   const [displayList, setDisplayList] = useState(false);
@@ -14,8 +13,12 @@ function CompilerScreen() {
   const ESPECIAL_COMMANDS = {
     SKIP_LINE: '\n',
     SPACE: ' ',
-    TAB: 9,
   };
+
+  const ESPECIAL_COMMANDS_NUMBER = {
+    TAB: 9,
+    SKIP_LINE: 13,
+  }
 
   const INIT_COMMENT = {
     SLASH: 1,
@@ -30,7 +33,7 @@ function CompilerScreen() {
     let commentLines = 0;
 
     for (let i = 0; i < file.length; i += 1) {
-      if (file[i].charCodeAt() !== ESPECIAL_COMMANDS.TAB && (file[i] !== ESPECIAL_COMMANDS.SPACE || isComment)) {
+      if (file[i].charCodeAt() !== ESPECIAL_COMMANDS_NUMBER.TAB && (file[i] !== ESPECIAL_COMMANDS.SPACE || isComment)) {
         
         if (file[i] === '/' || file[i] === '{' || isComment) {
 
@@ -79,7 +82,7 @@ function CompilerScreen() {
           break;
         }
         
-        else if (file[i] !== ESPECIAL_COMMANDS.SKIP_LINE && file[i].charCodeAt() !== 13) {
+        else if (file[i] !== ESPECIAL_COMMANDS.SKIP_LINE && file[i].charCodeAt() !== ESPECIAL_COMMANDS_NUMBER.SKIP_LINE) {
           const response = pegaToken(file[i], i, file);
           if (response.lexeme === 'Erro') {
             setHasError(line);
