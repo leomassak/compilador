@@ -16,7 +16,7 @@ export function pegaToken(e, position, file) {
   } else if (e === ';' || e === '.' || e === ',' || e === '(' || e === ')') {
     token = Functions.trataPontuação(e, position);
   } else {
-    token = { symbol: 'Erro', lexeme: 'Erro', position };
+    token = { symbol: 'Erro', lexeme: `O caractere ${e} é inválido`, position };
   }
   return token;
 }

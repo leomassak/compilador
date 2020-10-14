@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 
 import './styles.scss';
 import { pegaToken } from '../../functions/pegaToken';
+import * as SyntacticValidation from '../../syntactical/validations';
 
 function CompilerScreen() {
   const [tokenList, setTokenList] = useState([]);
-  const [hasError, setHasError] = useState(0);
   const [displayList, setDisplayList] = useState(false);
+  const [syntacticErrorIndex, setSyntacticErrorIndex] = useState(-1);
+  const [syntacticError, setSyntacticError] = useState('');
 
   const ESPECIAL_COMMANDS = {
     SKIP_LINE: '\n',
@@ -31,6 +33,7 @@ function CompilerScreen() {
     let comment = '';
     let commentType = null;
     let commentLines = 0;
+    let list = [];
 
     for (let i = 0; i < file.length; i += 1) {
       if (file[i].charCodeAt() !== ESPECIAL_COMMANDS_NUMBER.TAB && (file[i] !== ESPECIAL_COMMANDS.SPACE || isComment)) {
@@ -43,7 +46,7 @@ function CompilerScreen() {
               i += 1;
               commentType = 1;
             } else {
-              setHasError(line);
+              list = list.concat({ symbol: 'Erro', lexeme: `O comentário não foi formado corretamente`, line });
               break;
             }
           }
@@ -77,21 +80,11 @@ function CompilerScreen() {
           }
         }
         
-        else if (file[i] === '/' || file[i] === '}') {
-          setHasError(line);
-          break;
-        }
-        
         else if (file[i] !== ESPECIAL_COMMANDS.SKIP_LINE && file[i].charCodeAt() !== ESPECIAL_COMMANDS_NUMBER.SKIP_LINE) {
           const response = pegaToken(file[i], i, file);
-          if (response.lexeme === 'Erro') {
-            setHasError(line);
-            break;
-          }
-          else {
-            i = response.position;
-            setTokenList(tokenList => tokenList.concat({ symbol: response.symbol, lexeme: response.lexeme }))
-          }
+          list = list.concat({ symbol: response.symbol, lexeme: response.lexeme, line });
+          if (response.symbol !== 'Erro') i = response.position;
+          else break;
         }
 
         if (file[i] === ESPECIAL_COMMANDS.SKIP_LINE) {
@@ -101,7 +94,29 @@ function CompilerScreen() {
       }
     }
 
-    if (isComment) setHasError(line - commentLines);
+    if (isComment) list = list.concat({ symbol: 'Erro', lexeme: `O comentário não foi fechado`, line: line - commentLines });
+    return list;
+  }
+
+  function syntacticAnalysis(lexicalTokenList) {
+    for(let index = 0; index < lexicalTokenList.length; index++){
+      if (lexicalTokenList[index].symbol !== 'Erro') {
+        if (index === 0) {
+          if (!SyntacticValidation.initialValidation(lexicalTokenList[index])) {
+            setSyntacticErrorIndex(index);
+            setSyntacticError({ line: lexicalTokenList[index].line, description: 'O código deve iniciar com o identificador "programa"' });
+            break;
+          }
+        }
+        if (index === 1) {
+          if (!SyntacticValidation.identifierValidation(lexicalTokenList[index])) {
+            setSyntacticErrorIndex(index);
+            setSyntacticError({ line: lexicalTokenList[index].line, description: 'Identificador não encontrado' });
+            break;
+          }
+        }
+      } else break;
+    }
   }
 
   async function handleFileSelector(event) {
@@ -114,7 +129,9 @@ function CompilerScreen() {
       reader.onload = async (e) => {
         handleFileRemove();
         const file = e.target.result;
-        await lexicalAnalysis(file);
+        const list = await lexicalAnalysis(file);
+        await syntacticAnalysis(list);
+        setTokenList(list);
         setDisplayList(true);
       };
     } else alert('Este tipo de arquivo não é suportado!');
@@ -122,8 +139,9 @@ function CompilerScreen() {
 
   async function handleFileRemove() {
     setTokenList([]);
-    setHasError(0);
     setDisplayList(false)
+    setSyntacticErrorIndex(-1);
+    setSyntacticError('');
   }
 
   return (
@@ -152,20 +170,47 @@ function CompilerScreen() {
       <div className="main-panel">
         {displayList && tokenList.map((item, index) => (
           <>
-            <p className="panel-text-lines">
-              {`Símbolo -> ${item.symbol}`}
-            </p>
-            <p className="panel-text-lines">
-              {`Lexema -> ${item.lexeme}`}
-            </p>
-            <br />
+            {(syntacticErrorIndex === -1 || index < syntacticErrorIndex) && (
+              <>
+                {item.symbol === 'Erro' && (
+                  <>
+                    <p className="panel-error-text-lines">
+                      {`Linha -> ${item.line}`}
+                    </p>
+                    <p className="panel-error-text-lines">
+                      {`Erro -> ${item.lexeme}`}
+                      <br />
+                    </p>
+                  </>
+                )}
+                {item.symbol !== 'Erro' && (
+                  <>
+                    <p className="panel-text-lines">
+                      {`Linha -> ${item.line}`}
+                    </p>
+                    <p className="panel-text-lines">
+                      {`Símbolo -> ${item.symbol}`}
+                    </p>
+                    <p className="panel-text-lines">
+                      {`Lexema -> ${item.lexeme}`}
+                    </p>
+                    <br />
+                  </>
+                )}
+              </>
+            )}
           </>
         ))}
-        {hasError !== 0 && (
-          <p className="panel-error-text-lines">
-            {`Erro na linha ${hasError}`}
-            <br />
-          </p>
+        {syntacticErrorIndex >= 0 && (
+          <>
+            <p className="panel-error-text-lines">
+              {`Linha -> ${syntacticError.line}`}
+            </p>
+            <p className="panel-error-text-lines">
+              {`Erro -> ${syntacticError.description}`}
+              <br />
+            </p>
+          </>
         )}
       </div>
     </div>
