@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import './styles.scss';
 import { pegaToken } from '../../functions/pegaToken';
 import * as SyntacticValidation from '../../syntactical/validations';
+import * as SyntacticAnalysis from '../../syntactical/analisys';
 
 function CompilerScreen() {
   const [tokenList, setTokenList] = useState([]);
@@ -99,6 +100,7 @@ function CompilerScreen() {
   }
 
   function syntacticAnalysis(lexicalTokenList) {
+    console.log(lexicalTokenList);
     for(let index = 0; index < lexicalTokenList.length; index++){
       if (lexicalTokenList[index].symbol !== 'Erro') {
         if (index === 0) {
@@ -107,42 +109,38 @@ function CompilerScreen() {
             setSyntacticError({ line: lexicalTokenList[index].line, description: 'O código deve iniciar com o identificador "programa"' });
             break;
           }
-        }
-        if (index === 1) {
+        } else if (index === 1) {
           if (!SyntacticValidation.identifierValidation(lexicalTokenList[index])) {
             setSyntacticErrorIndex(index);
             setSyntacticError({ line: lexicalTokenList[index].line, description: 'Identificador não encontrado' });
             break;
           }
-        }
-        if (index === 2) {
+        } else if (index === 2) {
           if (!SyntacticValidation.semicolonValidation(lexicalTokenList[index])) {
             setSyntacticErrorIndex(index);
             setSyntacticError({ line: lexicalTokenList[index].line, description: 'Ponto e vírgula não encontrado' });
             break;
           }
-        }
-  
-          const response = SyntacticValidation.blockValidation(index, tokenList);
-          if(response.error) {
-           setSyntacticErrorIndex(index);
-           setSyntacticError({ line: response.error.line, description: response.error.description });
-           break;
         } else {
-          if (SyntacticValidation.pointValidation(tokenList[response.position + 1])) {
-            if(response.position + 1 === tokenList.length - 1) {
+          const response = SyntacticAnalysis.blockAnalisys(index, lexicalTokenList);
+          if (response.error) {
+            setSyntacticErrorIndex(response.index);
+            setSyntacticError({ line: response.line, description: response.description });
+            break;
+          } else if (SyntacticValidation.pointValidation(lexicalTokenList[response.index])) {
+            if (response.index === lexicalTokenList.length - 1) {
               console.log('sucesso');
             } else {
-              setSyntacticErrorIndex(index);
-              setSyntacticError({ line: tokenList[response.position + 1].line, description: 'Tokens existentes após o ponto' });
+              setSyntacticErrorIndex(response.index);
+              setSyntacticError({ line: lexicalTokenList[response.index + 1].line, description: 'Tokens existentes após o ponto' });
               break;
             }
           } else {
-            setSyntacticErrorIndex(index);
-            setSyntacticError({ line: tokenList[response.position + 1].line, description: 'Ponto não encontrado no fim do arquivo' });
+            setSyntacticErrorIndex(response.index);
+            setSyntacticError({ line: lexicalTokenList[response.index + 1].line, description: 'Ponto não encontrado no fim do arquivo' });
             break;
           }
-        }
+        }        
       } else break;
     }
   }
