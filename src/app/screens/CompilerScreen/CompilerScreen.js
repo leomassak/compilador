@@ -115,6 +115,34 @@ function CompilerScreen() {
             break;
           }
         }
+        if (index === 2) {
+          if (!SyntacticValidation.semicolonValidation(lexicalTokenList[index])) {
+            setSyntacticErrorIndex(index);
+            setSyntacticError({ line: lexicalTokenList[index].line, description: 'Ponto e vírgula não encontrado' });
+            break;
+          }
+        }
+  
+          const response = SyntacticValidation.blockValidation(index, tokenList);
+          if(response.error) {
+           setSyntacticErrorIndex(index);
+           setSyntacticError({ line: response.error.line, description: response.error.description });
+           break;
+        } else {
+          if (SyntacticValidation.pointValidation(tokenList[response.position + 1])) {
+            if(response.position + 1 === tokenList.length - 1) {
+              console.log('sucesso');
+            } else {
+              setSyntacticErrorIndex(index);
+              setSyntacticError({ line: tokenList[response.position + 1].line, description: 'Tokens existentes após o ponto' });
+              break;
+            }
+          } else {
+            setSyntacticErrorIndex(index);
+            setSyntacticError({ line: tokenList[response.position + 1].line, description: 'Ponto não encontrado no fim do arquivo' });
+            break;
+          }
+        }
       } else break;
     }
   }
