@@ -107,19 +107,19 @@ function CompilerScreen() {
         if (index === 0) {
           if (!SyntacticValidation.initialValidation(lexicalTokenList[index])) {
             setSyntacticErrorIndex(index);
-            setSyntacticError({ line: lexicalTokenList[index].line, description: 'O código deve iniciar com o identificador "programa"' });
+            setSyntacticError({ line: lexicalTokenList[index].line, description: `Esperado comando ínicio, porem encontrado comando ${lexicalTokenList[index].lexeme}` });
             break;
           }
         } else if (index === 1) {
           if (!SyntacticValidation.identifierValidation(lexicalTokenList[index])) {
             setSyntacticErrorIndex(index);
-            setSyntacticError({ line: lexicalTokenList[index].line, description: 'Identificador não encontrado' });
+            setSyntacticError({ line: lexicalTokenList[index].line, description: `Esperado identificador, porem encontrado ${lexicalTokenList[index].lexeme}` });
             break;
           }
         } else if (index === 2) {
           if (!SyntacticValidation.semicolonValidation(lexicalTokenList[index])) {
             setSyntacticErrorIndex(index);
-            setSyntacticError({ line: lexicalTokenList[index].line, description: 'Ponto e vírgula não encontrado' });
+            setSyntacticError({ line: lexicalTokenList[index].line, description: `Esperado ponto e virgula, porem encontrado ${lexicalTokenList[index].lexeme}` });
             break;
           }
         } else {
@@ -131,7 +131,7 @@ function CompilerScreen() {
             break;
           } else if (response.index >= lexicalTokenList.length) {
             setSyntacticErrorIndex(response.index);
-            setSyntacticError({ line: lexicalTokenList[lexicalTokenList.length - 1].line, description: 'Ponto não encontrado no fim do arquivo' });
+            setSyntacticError({ line: lexicalTokenList[lexicalTokenList.length - 1].line, description: 'Arquivo chegou no fim, porém não foi encontrado o ponto' });
             break;
           } else if (SyntacticValidation.pointValidation(lexicalTokenList[response.index])) {
             index = response.index
@@ -145,7 +145,7 @@ function CompilerScreen() {
             }
           } else {
             setSyntacticErrorIndex(response.index);
-            setSyntacticError({ line: lexicalTokenList[response.index + 1].line, description: 'Ponto não encontrado no fim do arquivo' });
+            setSyntacticError({ line: lexicalTokenList[response.index + 1].line, description: `Esperado ponto, porem encontrado ${lexicalTokenList[index].lexeme}` });
             break;
           }
         }

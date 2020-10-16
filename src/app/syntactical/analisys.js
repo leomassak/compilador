@@ -1,12 +1,20 @@
 import * as SyntacticValidation from './validations';
 
+function lerToken(index, tokenList) {
+    index += 1;
+    if (tokenList[index].symbol === 'Erro') {
+        return { error: true, description: tokenList[index].lexema, index, line: tokenList[index].line }
+    }
+    return { error: false, index };
+}
 
 function typeAnalysis(index, tokenList) {
     let response;
     if (SyntacticValidation.integerValidation(tokenList[index]) || SyntacticValidation.booleanValidation(tokenList[index])) {
+        // response = lerToken(index, tokenList);
         response = { error: false, index: index + 1 }
     } else {
-        response = { error: true, description: 'Tipo diferente de inteiro ou booleano', index, line: tokenList[index].line }
+        response = { error: true, description: `Esperado inteiro ou booleano, porem encontrado ${tokenList[index].lexeme}`, index, line: tokenList[index].line }
     }
     return response;
 }
@@ -23,16 +31,16 @@ function varAnalysis(index, tokenList) {
                     index += 1;
                     // console.log('analisa variavel', tokenList[index])
                     if (SyntacticValidation.doublePointValidation(tokenList[index])) {
-                        response = { error: true, description: 'Dois pontos após a virgula', line: tokenList[index].line, index }
+                        response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
                         break;
                     }
                 }
             } else {
-                response = { error: true, description: 'Não foi encontrada a virgula ou dois pontos após o identificador', line: tokenList[index].line, index }
+                response = { error: true, description: `Esperado virgula ou dois pontos, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
                 break;
             }
         } else {
-            response = { error: true, description: 'Não existe identificador após a declaração de variável', line: tokenList[index].line, index }
+            response = { error: true, description: `Esperado um identificador, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
             break;
         }
     } while (!SyntacticValidation.doublePointValidation(tokenList[index]));
@@ -62,13 +70,13 @@ function etVarAnalysis(index, tokenList) {
                         index += 1;
                         response = { ...response, index };
                     } else {
-                        response = { error: true, description: 'Ponto e virgula não encontrado', line: tokenList[index].line, index }
+                        response = { error: true, description: `Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
                         break;
                     }
                 } else break;
             }
         } else {
-            response = { error: true, description: 'Declaração de variável sem identificador', line: tokenList[index].line, index }
+            response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
         }
     }
     return response;
@@ -86,11 +94,11 @@ function subroutineDeclarationAnalysis(index, tokenList) {
             response = blockAnalisys(index, tokenList);
             console.log('blockAnalisys', response)
         } else {
-            response = { error: true, description: 'Falta do ponto e virgula', line: tokenList[index].line, index };
+            response = { error: true, description: `Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
         }
     } else {
         console.log(index, tokenList[index]);
-        response = { error: true, description: 'Falta identificador', line: tokenList[index].line, index };
+        response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
     }
     return response;
 }
@@ -111,14 +119,14 @@ function functionDeclarationAnalysis(index, tokenList) {
                 }
             }
             else {
-                response = { error: true, description: 'Não foi encontrado o tipo da função', line: tokenList[index].line, index };
+                response = { error: true, description: `Esperado booleano ou inteiro, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
             }
         } else {
-            response = { error: true, description: 'Não encontrado os dois pontos', line: tokenList[index].line, index };
+            response = { error: true, description: `Esperado dois pontos, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
         }
     } else {
         console.log(index, tokenList[index]);
-        response = { error: true, description: 'Falta identificador', line: tokenList[index].line, index };
+        response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
     }
     return response;
 }
@@ -142,7 +150,7 @@ function subroutineAnalysis(index, tokenList) {
                 response = { error: false, index };
             } else {
                 console.log('Não encontrou ponto e virgula');
-                response = { error: true, description: 'Falta ponto e virgula', line: tokenList[index].line, index }
+                response = { error: true, description: `Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
                 break;
             }
         } else {
@@ -248,7 +256,7 @@ export function factorAnalisys(index, tokenList) {
                 index += 1;
                 return { error: false, index };
             } else {
-                return { error: true, description: 'Não encontrou fecha parênteses', line: tokenList[index].line, index };
+                return { error: true, description: `Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
             }
         }
         return response;
@@ -256,7 +264,7 @@ export function factorAnalisys(index, tokenList) {
         index += 1;
         return { error: false, index };
     } else {
-        return { error: true, description: 'Esperado um fator', line: tokenList[index].line, index };
+        return { error: true, description: `Esperado um fator, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
     }
 }
 
@@ -329,7 +337,7 @@ function whileAnalysis(index, tokenList) {
         response = simpleCommandAnalysis(index, tokenList);
         index = response.index;
     } else {
-        response = { error: true, description: 'Não encontrou o comando faça', line: tokenList[index].line, index };
+        response = { error: true, description: `Esperado o comando faça, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
     }
 
     return response;
@@ -348,13 +356,13 @@ function readAnalysis(index, tokenList) {
                 response = { error: false, index };
 
             } else {
-                response = { error: true, description: 'Não encontrou o fecha parênteses', line: tokenList[index].line, index };
+                response = { error: true, description: `Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
             }
         } else {
-            response = { error: true, description: 'Não encontrou o identificador', line: tokenList[index].line, index };
+            response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
         }
     } else {
-        response = { error: true, description: 'Não encontrou o abre parênteses', line: tokenList[index].line, index };
+        response = { error: true, description: `Esperado abre parênteses, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
     }
 
     return response;
@@ -373,15 +381,15 @@ function writeAnalysis(index, tokenList) {
                 response = { error: false, index };
 
             } else {
-                response = { error: true, description: 'Não encontrou o fecha parênteses', line: tokenList[index].line, index };
+                response = { error: true, description: `Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
             }
         } else {
-            response = { error: true, description: 'Não encontrou o identificador', line: tokenList[index].line, index };
+            response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
         }
     } else {
-        response = { error: true, description: 'Não encontrou o abre parênteses', line: tokenList[index].line, index };
+        response = { error: true, description: `Esperado abre parênteses, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
     }
-    console.log('writeAnalysis', response);
+
     return response;
 }
 
@@ -436,12 +444,12 @@ function commandAnalysis(index, tokenList) {
                 }
             } else {
                 console.log('entrou');
-                return { error: true, description: 'Não foi encontrado o ponto e virgula', line: tokenList[index].line, index };
+                return { error: true, description: `Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
             }
         }
         response = { error: false, index: index + 1 };
     } else {
-        response = { error: true, description: 'Não foi encontrado o comando início', line: tokenList[index].line, index };
+        response = { error: true, description: `Esperado inicio, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
     }
 
     return response;
