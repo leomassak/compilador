@@ -1,13 +1,5 @@
 import * as SyntacticValidation from './validations';
 
-// function getErrorMessage(error) {
-//     return {
-//         error: {
-//             line: error.line,
-//             description: error.description,
-//         }
-//     }
-// }
 
 function typeAnalysis(index, tokenList) {
     let response;
@@ -57,13 +49,13 @@ function varAnalysis(index, tokenList) {
 }
 
 function etVarAnalysis(index, tokenList) {
-    let response = {};
+    let response = { error: false, index };
     if (SyntacticValidation.varValidation(tokenList[index])) {
         index += 1;
         if(SyntacticValidation.identifierValidation(tokenList[index])) {
             while(SyntacticValidation.identifierValidation(tokenList[index])) {
                 response = varAnalysis(index, tokenList);
-                console.log(response);
+                console.log('varAnalysis', response, tokenList[response.index]);
                 if (!response.error) {
                     index = response.index;
                     if (SyntacticValidation.semicolonValidation(tokenList[index])) {
@@ -104,7 +96,8 @@ function subroutineDeclarationAnalysis(index, tokenList) {
 }
 
 function functionDeclarationAnalysis(index, tokenList) {
-    let response = {};
+    let response = { error: false, index };
+    console.log(index, tokenList[index])
     index += 1;
     if (SyntacticValidation.identifierValidation(tokenList[index])) {
         index += 1;
@@ -131,7 +124,7 @@ function functionDeclarationAnalysis(index, tokenList) {
 }
 
 function subroutineAnalysis(index, tokenList) {
-    let response = { erro: false, index };
+    let response = { error: false, index };
     
     while (SyntacticValidation.procedureValidation(tokenList[index]) || SyntacticValidation.functionValidation(tokenList[index])) {
         if (SyntacticValidation.procedureValidation(tokenList[index])) {
@@ -143,18 +136,278 @@ function subroutineAnalysis(index, tokenList) {
         }
         if (!response.error) {
             index = response.index;
-            // if (SyntacticValidation.semicolonValidation(tokenList[index])) {
-            //     console.log('Leu o ponto e virgula');
-            //     response = { error: true, index }
-            // } else {
-            //     console.log('Não encontrou ponto e virgula');
-            //     response = { error: true, description: 'Falta ponto e virgula', line: tokenList[index].line, index }
-            //     break;
-            // }
+            if (SyntacticValidation.semicolonValidation(tokenList[index])) {
+                console.log('Leu o ponto e virgula');
+                response = { error: false, index }
+            } else {
+                console.log('Não encontrou ponto e virgula');
+                response = { error: true, description: 'Falta ponto e virgula', line: tokenList[index].line, index }
+                break;
+            }
         } else {
             console.log(response)
             break;
         }
+    }
+
+    return response;
+}
+
+function expressionAnalysis(index, tokenList) {
+    let response = { error: false, index };
+    console.log(index, tokenList);
+    response = simpleExpressionAnalysis(index, tokenList);
+    if (response.error) {
+        return response;
+    }
+
+    index = response.index;
+    if (SyntacticValidation.biggerValidation(tokenList[index])
+        || SyntacticValidation.bigEqualValidation(tokenList[index])
+        || SyntacticValidation.equalValidation(tokenList[index])
+        || SyntacticValidation.lowerValidation(tokenList[index])
+        || SyntacticValidation.lowerEqualValidation(tokenList[index])
+        || SyntacticValidation.diffValidation(tokenList[index])) {
+        index += 1;
+        response = simpleExpressionAnalysis(index, tokenList);
+        return response;
+    }
+
+    return { error: false, index };
+}
+
+function simpleExpressionAnalysis(index, tokenList) {
+    let response = {};
+    console.log(index, tokenList[index]);
+    if (SyntacticValidation.plusValidation(tokenList[index]) || SyntacticValidation.minusValidation(tokenList[index])) {
+        index += 1;
+        response = termAnalisys(index, tokenList);
+
+        if (response.error) {
+            return response;
+        }
+
+        index = response.index;
+        while (SyntacticValidation.plusValidation(tokenList[index])
+            || SyntacticValidation.minusValidation(tokenList[index])
+            || SyntacticValidation.orValidation(tokenList[index])) {
+            index += 1;
+            response = termAnalisys(index, tokenList);
+            return response;
+        }
+    }
+
+    return { error: false, index };
+}
+
+export function procedureAnalysis(index, tokenList) {
+    return { error: false, index };
+}
+
+export function functionCallAnalisys(index, tokenList) {
+    return { error: false, index: index + 1 };
+}
+
+export function assignmentAnalysis(index, tokenList) {
+    index += 1;
+    console.log(index, tokenList);
+    const response = expressionAnalysis(index, tokenList);
+    return response;
+}
+
+
+export function factorAnalisys(index, tokenList) {
+    let response = { error: false, index };
+
+    if (SyntacticValidation.identifierValidation(tokenList[index])) {
+        response = functionCallAnalisys();
+        return response;
+    } else if (SyntacticValidation.numberValidation(tokenList[index])) {
+        index += 1;
+    } else if (SyntacticValidation.notValidation(tokenList[index])) {
+        index += 1;
+        response = factorAnalisys(index, tokenList);
+        return response;
+    } else if (SyntacticValidation.openBracketValidation(tokenList[index])) {
+        index += 1;
+        console.log('factor', index, tokenList[index]);
+        response = expressionAnalysis(index, tokenList);
+        if (!response.error) {
+            index = response.index;
+            if (SyntacticValidation.closeBracketValidation(tokenList[index])) {
+                index += 1;
+                return { error: false, index };
+            } else {
+                return { error: true, description: 'Não encontrou fecha parênteses', line: tokenList[index].line, index };
+            }
+        }
+        return response;
+    } else if (SyntacticValidation.trueValidation(tokenList[index]) || SyntacticValidation.falseValidation(tokenList[index])) {
+        index += 1;
+        return { error: false, index };
+    } else {
+        return { error: true, description: 'Não entendi esse erro', line: tokenList[index].line, index };
+    }
+}
+
+export function termAnalisys(index, tokenList) {
+    let response = factorAnalisys(index, tokenList);
+
+    if (response.error) {
+        return response
+    }
+
+    index = response.index;
+    while (SyntacticValidation.multValidation(tokenList[index])
+        || SyntacticValidation.divValidation(tokenList[index])
+        || SyntacticValidation.andValidation(tokenList[index])) {
+        index += 1;
+        response = factorAnalisys(index, tokenList);
+        return response;
+    }
+}
+
+function assignmentOrProcedureAnalysis(index, tokenList) {
+    let response = { error: false, index };
+
+    index += 1;
+    if (SyntacticValidation.assignmentValidation(tokenList[index])) {
+        response = assignmentAnalysis(index, tokenList);
+    } else {
+        response = procedureAnalysis(index, tokenList);
+    }
+
+    return response;
+}
+
+function ifAnalysis(index, tokenList) {
+    let response = { error: false, index };
+
+    index += 1;
+    console.log('if', index, tokenList[index]);
+    response =  expressionAnalysis(index, tokenList);
+    if (!response.error && SyntacticValidation.elseValidation(tokenList[index])) {
+        index += 1;
+        response = simpleCommandAnalysis(index, tokenList);
+        if (!response.error && SyntacticValidation.elseIfValidation(tokenList[index])) {
+            index += 1;
+            simpleCommandAnalysis(index, tokenList);
+        }
+    }
+
+    return response;
+}
+
+function whileAnalysis(index, tokenList) {
+    let response = { error: false, index };
+
+    index += 1;
+    console.log('while', index, tokenList[index]);
+    response = expressionAnalysis(index, tokenList);
+    if (!response.error && SyntacticValidation.doValidation(tokenList[index])) {
+        index += 1;
+        response = simpleCommandAnalysis(index, tokenList);
+    } else {
+        response = { error: true, description: 'Não encontrou o comando faça', line: tokenList[index].line, index };
+    }
+
+    return response;
+}
+
+function readAnalysis(index, tokenList) {
+    let response = { error: false, index };
+
+    index += 1;
+    if (SyntacticValidation.openBracketValidation(tokenList[index])) {
+        index += 1;
+        if (SyntacticValidation.identifierValidation(tokenList[index])) {
+            index += 1;
+            if (SyntacticValidation.closeBracketValidation(tokenList[index])) {
+                index += 1;
+                response = { error: false, index };
+
+            } else {
+                response = { error: true, description: 'Não encontrou o fecha parênteses', line: tokenList[index].line, index };
+            }
+        } else {
+            response = { error: true, description: 'Não encontrou o identificador', line: tokenList[index].line, index };
+        }
+    } else {
+        response = { error: true, description: 'Não encontrou o abre parênteses', line: tokenList[index].line, index };
+    }
+
+    return response;
+}
+
+function writeAnalysis(index, tokenList) {
+    let response = { error: false, index };
+
+    index += 1;
+    if (SyntacticValidation.openBracketValidation(tokenList[index])) {
+        index += 1;
+        if (SyntacticValidation.identifierValidation(tokenList[index])) {
+            index += 1;
+            if (SyntacticValidation.closeBracketValidation(tokenList[index])) {
+                index += 1;
+                response = { error: false, index };
+
+            } else {
+                response = { error: true, description: 'Não encontrou o fecha parênteses', line: tokenList[index].line, index };
+            }
+        } else {
+            response = { error: true, description: 'Não encontrou o identificador', line: tokenList[index].line, index };
+        }
+    } else {
+        response = { error: true, description: 'Não encontrou o abre parênteses', line: tokenList[index].line, index };
+    }
+
+    return response;
+}
+
+function simpleCommandAnalysis(index, tokenList) {
+    let response = { error: false, index };
+
+    if (SyntacticValidation.identifierValidation(tokenList[index])) {
+        response = assignmentOrProcedureAnalysis(index, tokenList);
+
+    } else if (SyntacticValidation.ifValidation(tokenList[index])) {
+        response = ifAnalysis(index, tokenList);
+
+    } else if (SyntacticValidation.whileValidation(tokenList[index])) {
+        response = whileAnalysis(index, tokenList);
+
+    } else if (SyntacticValidation.readValidation(tokenList[index])) {
+        response = readAnalysis(index, tokenList);
+
+    } else if (SyntacticValidation.writeValidation(tokenList[index])) {
+        response = writeAnalysis(index, tokenList);
+
+    } else {
+        response = commandAnalysis(index, tokenList);
+
+    }
+
+    return response;
+}
+
+function commandAnalysis(index, tokenList) {
+    let response = { error: false, index };
+
+    if (SyntacticValidation.initValidation(tokenList[index])) {
+        index += 1;
+        console.log('commandAnalysis', index, tokenList[index]);
+        simpleCommandAnalysis(index, tokenList);
+        while (!SyntacticValidation.endValidation(tokenList[index])) {
+            index += 1;
+            if (SyntacticValidation.doublePointValidation(tokenList[index])) {
+                simpleCommandAnalysis(index, tokenList);
+            } else {
+                response = { error: true, description: 'Não foi encontrado o ponto e virgula', line: tokenList[index].line, index };
+                break;
+            }
+        }
+    } else {
+        response = { ...response, error: true, description: 'Não foi encontrado o comando início', line: tokenList[index].line };
     }
 
     return response;
@@ -169,16 +422,15 @@ export function blockAnalisys(index, tokenList) {
 
     const subroutineStepResponse = subroutineAnalysis(varStepResponse.index, tokenList);
     if(subroutineStepResponse.error) {
-        console.log('block', subroutineStepResponse);
+        console.log('block2', subroutineStepResponse);
         return subroutineStepResponse;
     }
 
-    return subroutineStepResponse;
+    const commandsStepResponse = commandAnalysis(subroutineStepResponse.index, tokenList);
+    if (commandsStepResponse.error) {
+        console.log('block3', commandsStepResponse);
+        return commandsStepResponse;
+    }
 
-    // const commandsStepResponse = commandAnalysis(subroutineStepResponse.position, tokenList);
-    // if (commandsStepResponse.error) {
-    //     return getErrorMessage(commandsStepResponse.error);
-    // }
-
-    // return { position: commandsStepResponse.position };
+    return commandsStepResponse;
 }
