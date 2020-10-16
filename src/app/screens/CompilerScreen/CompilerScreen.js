@@ -12,6 +12,7 @@ function CompilerScreen() {
   const [displayList, setDisplayList] = useState(false);
   const [syntacticErrorIndex, setSyntacticErrorIndex] = useState(-1);
   const [syntacticError, setSyntacticError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const ESPECIAL_COMMANDS = {
     SKIP_LINE: '\n',
@@ -123,13 +124,20 @@ function CompilerScreen() {
           }
         } else {
           const response = SyntacticAnalysis.blockAnalisys(index, lexicalTokenList);
+          console.log('final', response);
           if (response.error) {
             setSyntacticErrorIndex(response.index);
             setSyntacticError({ line: response.line, description: response.description });
             break;
+          } else if (response.index >= lexicalTokenList.length) {
+            setSyntacticErrorIndex(response.index);
+            setSyntacticError({ line: lexicalTokenList[lexicalTokenList.length - 1].line, description: 'Ponto não encontrado no fim do arquivo' });
+            break;
           } else if (SyntacticValidation.pointValidation(lexicalTokenList[response.index])) {
-            if (response.index === lexicalTokenList.length - 1) {
-              console.log('sucesso');
+            index = response.index
+            if (index === lexicalTokenList.length - 1) {
+              setSuccess(true);
+              break;
             } else {
               setSyntacticErrorIndex(response.index);
               setSyntacticError({ line: lexicalTokenList[response.index + 1].line, description: 'Tokens existentes após o ponto' });
@@ -140,7 +148,7 @@ function CompilerScreen() {
             setSyntacticError({ line: lexicalTokenList[response.index + 1].line, description: 'Ponto não encontrado no fim do arquivo' });
             break;
           }
-        }        
+        }
       } else break;
     }
   }
@@ -168,6 +176,7 @@ function CompilerScreen() {
     setDisplayList(false)
     setSyntacticErrorIndex(-1);
     setSyntacticError('');
+    setSuccess(false);
   }
 
   return (
@@ -237,6 +246,11 @@ function CompilerScreen() {
               <br />
             </p>
           </>
+        )}
+        {success && (
+          <p className="panel-success-text-lines">
+            Compilado com sucesso!
+          </p>
         )}
       </div>
     </div>

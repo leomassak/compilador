@@ -139,7 +139,7 @@ export function divValidation(token) {
 }
 
 export function numberValidation(token) {
-  return token.symbol === 'snao';
+  return token.symbol === 'snumero';
 }
 
 export function notValidation(token) {

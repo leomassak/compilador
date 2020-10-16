@@ -138,7 +138,8 @@ function subroutineAnalysis(index, tokenList) {
             index = response.index;
             if (SyntacticValidation.semicolonValidation(tokenList[index])) {
                 console.log('Leu o ponto e virgula');
-                response = { error: false, index }
+                index += 1;
+                response = { error: false, index };
             } else {
                 console.log('Não encontrou ponto e virgula');
                 response = { error: true, description: 'Falta ponto e virgula', line: tokenList[index].line, index }
@@ -148,7 +149,7 @@ function subroutineAnalysis(index, tokenList) {
             console.log(response)
             break;
         }
-    }
+    }  
 
     return response;
 }
@@ -160,7 +161,7 @@ function expressionAnalysis(index, tokenList) {
     if (response.error) {
         return response;
     }
-
+    console.log('simpleExpressionAnalysis', response);
     index = response.index;
     if (SyntacticValidation.biggerValidation(tokenList[index])
         || SyntacticValidation.bigEqualValidation(tokenList[index])
@@ -169,6 +170,7 @@ function expressionAnalysis(index, tokenList) {
         || SyntacticValidation.lowerEqualValidation(tokenList[index])
         || SyntacticValidation.diffValidation(tokenList[index])) {
         index += 1;
+        console.log('expressionAnalysis entrou', index, tokenList[index]);
         response = simpleExpressionAnalysis(index, tokenList);
         return response;
     }
@@ -181,20 +183,20 @@ function simpleExpressionAnalysis(index, tokenList) {
     console.log(index, tokenList[index]);
     if (SyntacticValidation.plusValidation(tokenList[index]) || SyntacticValidation.minusValidation(tokenList[index])) {
         index += 1;
+    }
+    response = termAnalisys(index, tokenList);
+    console.log('termAnalisys', response);
+    if (response.error) {
+        return response;
+    }
+
+    index = response.index;
+    while (SyntacticValidation.plusValidation(tokenList[index])
+        || SyntacticValidation.minusValidation(tokenList[index])
+        || SyntacticValidation.orValidation(tokenList[index])) {
+        index += 1;
         response = termAnalisys(index, tokenList);
-
-        if (response.error) {
-            return response;
-        }
-
-        index = response.index;
-        while (SyntacticValidation.plusValidation(tokenList[index])
-            || SyntacticValidation.minusValidation(tokenList[index])
-            || SyntacticValidation.orValidation(tokenList[index])) {
-            index += 1;
-            response = termAnalisys(index, tokenList);
-            return response;
-        }
+        return response;
     }
 
     return { error: false, index };
@@ -205,12 +207,13 @@ export function procedureAnalysis(index, tokenList) {
 }
 
 export function functionCallAnalisys(index, tokenList) {
+    console.log(index);
     return { error: false, index: index + 1 };
 }
 
 export function assignmentAnalysis(index, tokenList) {
     index += 1;
-    console.log(index, tokenList);
+    console.log('assignmentAnalysis', index, tokenList);
     const response = expressionAnalysis(index, tokenList);
     return response;
 }
@@ -220,18 +223,25 @@ export function factorAnalisys(index, tokenList) {
     let response = { error: false, index };
 
     if (SyntacticValidation.identifierValidation(tokenList[index])) {
-        response = functionCallAnalisys();
+        response = functionCallAnalisys(index);
+        console.log('functionCallAnalisys', response);
         return response;
     } else if (SyntacticValidation.numberValidation(tokenList[index])) {
         index += 1;
+        console.log('termAnalisys leu token');
+        return { error: false, index };
     } else if (SyntacticValidation.notValidation(tokenList[index])) {
         index += 1;
         response = factorAnalisys(index, tokenList);
+        console.log('factorAnalisys', response);
+
         return response;
     } else if (SyntacticValidation.openBracketValidation(tokenList[index])) {
         index += 1;
         console.log('factor', index, tokenList[index]);
         response = expressionAnalysis(index, tokenList);
+        console.log('expressionAnalysis', response);
+
         if (!response.error) {
             index = response.index;
             if (SyntacticValidation.closeBracketValidation(tokenList[index])) {
@@ -246,13 +256,14 @@ export function factorAnalisys(index, tokenList) {
         index += 1;
         return { error: false, index };
     } else {
-        return { error: true, description: 'Não entendi esse erro', line: tokenList[index].line, index };
+        return { error: true, description: 'Esperado um fator', line: tokenList[index].line, index };
     }
 }
 
 export function termAnalisys(index, tokenList) {
+    console.log('entrou', index);
     let response = factorAnalisys(index, tokenList);
-
+    console.log('termAnalisys', response);
     if (response.error) {
         return response
     }
@@ -265,6 +276,8 @@ export function termAnalisys(index, tokenList) {
         response = factorAnalisys(index, tokenList);
         return response;
     }
+
+    return { error: false, index };
 }
 
 function assignmentOrProcedureAnalysis(index, tokenList) {
@@ -286,12 +299,15 @@ function ifAnalysis(index, tokenList) {
     index += 1;
     console.log('if', index, tokenList[index]);
     response =  expressionAnalysis(index, tokenList);
+    console.log('expressionAnalysis', response);
+    index = response.index;
     if (!response.error && SyntacticValidation.elseValidation(tokenList[index])) {
         index += 1;
         response = simpleCommandAnalysis(index, tokenList);
+        index = response.index;
         if (!response.error && SyntacticValidation.elseIfValidation(tokenList[index])) {
             index += 1;
-            simpleCommandAnalysis(index, tokenList);
+            response = simpleCommandAnalysis(index, tokenList);
         }
     }
 
@@ -304,9 +320,14 @@ function whileAnalysis(index, tokenList) {
     index += 1;
     console.log('while', index, tokenList[index]);
     response = expressionAnalysis(index, tokenList);
-    if (!response.error && SyntacticValidation.doValidation(tokenList[index])) {
+    index = response.index;
+    if (response.error) {
+        return response;
+    }
+    if (SyntacticValidation.doValidation(tokenList[index])) {
         index += 1;
         response = simpleCommandAnalysis(index, tokenList);
+        index = response.index;
     } else {
         response = { error: true, description: 'Não encontrou o comando faça', line: tokenList[index].line, index };
     }
@@ -360,7 +381,7 @@ function writeAnalysis(index, tokenList) {
     } else {
         response = { error: true, description: 'Não encontrou o abre parênteses', line: tokenList[index].line, index };
     }
-
+    console.log('writeAnalysis', response);
     return response;
 }
 
@@ -396,18 +417,31 @@ function commandAnalysis(index, tokenList) {
     if (SyntacticValidation.initValidation(tokenList[index])) {
         index += 1;
         console.log('commandAnalysis', index, tokenList[index]);
-        simpleCommandAnalysis(index, tokenList);
+        response = simpleCommandAnalysis(index, tokenList);
+        if (response.error) {
+            return response;
+        }
+        index = response.index;
         while (!SyntacticValidation.endValidation(tokenList[index])) {
-            index += 1;
-            if (SyntacticValidation.doublePointValidation(tokenList[index])) {
-                simpleCommandAnalysis(index, tokenList);
+            if (SyntacticValidation.semicolonValidation(tokenList[index])) {
+                index += 1;
+                if (!SyntacticValidation.endValidation(tokenList[index])) {
+                    response = simpleCommandAnalysis(index, tokenList);
+                    if (response.error) {
+                        return response;
+                    }
+                    console.log('simpleCommandAnalysis', response);
+                    index = response.index;
+                    console.log(tokenList[index]);
+                }
             } else {
-                response = { error: true, description: 'Não foi encontrado o ponto e virgula', line: tokenList[index].line, index };
-                break;
+                console.log('entrou');
+                return { error: true, description: 'Não foi encontrado o ponto e virgula', line: tokenList[index].line, index };
             }
         }
+        response = { error: false, index: index + 1 };
     } else {
-        response = { ...response, error: true, description: 'Não foi encontrado o comando início', line: tokenList[index].line };
+        response = { error: true, description: 'Não foi encontrado o comando início', line: tokenList[index].line, index };
     }
 
     return response;
@@ -425,6 +459,8 @@ export function blockAnalisys(index, tokenList) {
         console.log('block2', subroutineStepResponse);
         return subroutineStepResponse;
     }
+
+    console.log(subroutineStepResponse);
 
     const commandsStepResponse = commandAnalysis(subroutineStepResponse.index, tokenList);
     if (commandsStepResponse.error) {
