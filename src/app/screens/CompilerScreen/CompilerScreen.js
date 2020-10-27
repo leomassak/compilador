@@ -124,16 +124,11 @@ function CompilerScreen() {
           }
         } else {
           const response = SyntacticAnalysis.blockAnalisys(index, lexicalTokenList);
-          console.log('final', response);
           if (response.error) {
             setSyntacticErrorIndex(response.index);
             setSyntacticError({ line: response.line, description: response.description });
             break;
-          } else if (response.index >= lexicalTokenList.length) {
-            setSyntacticErrorIndex(response.index);
-            setSyntacticError({ line: lexicalTokenList[lexicalTokenList.length - 1].line, description: 'Arquivo chegou no fim, porém não foi encontrado o ponto' });
-            break;
-          } else if (SyntacticValidation.pointValidation(lexicalTokenList[response.index])) {
+          }  else if (SyntacticValidation.pointValidation(lexicalTokenList[response.index])) {
             index = response.index
             if (index === lexicalTokenList.length - 1) {
               setSuccess(true);
