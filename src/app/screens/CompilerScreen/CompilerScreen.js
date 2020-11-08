@@ -1,13 +1,20 @@
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 
 import './styles.scss';
 import { pegaToken } from '../../functions/pegaToken';
 import * as SyntacticValidation from '../../syntactical/validations';
 import * as SyntacticAnalysis from '../../syntactical/analisys';
 
+import { SymbolTableSelectors } from '../../redux/reducers';
+import { SymbolTableActions } from '../../redux/actions';
+
 function CompilerScreen() {
+  const dispatch = useDispatch();
+  const symbolTable = useSelector((state) => SymbolTableSelectors.getSymbolTable(state));
+
   const [tokenList, setTokenList] = useState([]);
   const [displayList, setDisplayList] = useState(false);
   const [syntacticErrorIndex, setSyntacticErrorIndex] = useState(-1);
@@ -101,7 +108,7 @@ function CompilerScreen() {
   }
 
   function syntacticAnalysis(lexicalTokenList) {
-    console.log(lexicalTokenList);
+    // console.log(lexicalTokenList);
     for(let index = 0; index < lexicalTokenList.length; index++){
       if (lexicalTokenList[index].symbol !== 'Erro') {
         if (index === 0) {
@@ -116,6 +123,7 @@ function CompilerScreen() {
             setSyntacticError({ line: lexicalTokenList[index].line, description: `Esperado identificador, porem encontrado ${lexicalTokenList[index].lexeme}` });
             break;
           }
+          dispatch(SymbolTableActions.insertInSymbolTable(lexicalTokenList[index].lexeme, 0))
         } else if (index === 2) {
           if (!SyntacticValidation.semicolonValidation(lexicalTokenList[index])) {
             setSyntacticErrorIndex(index);
