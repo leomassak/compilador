@@ -1,4 +1,5 @@
 import * as SyntacticValidation from './validations';
+import * as SymbolTable from '../symbolTable';
 
 function lerToken(index, tokenList) {
     index += 1;
@@ -24,6 +25,8 @@ function varAnalysis(index, tokenList) {
     let response = {};
     do {
         if (SyntacticValidation.identifierValidation(tokenList[index])) {
+            const isDuplicate = SymbolTable.searchDuplicateVariable(tokenList[index].lexeme)
+            console.log('checkDup', isDuplicate);
             response = lerToken(index, tokenList);
             if (response.error) return response;
 

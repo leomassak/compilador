@@ -1,13 +1,9 @@
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
 import thunk from 'redux-thunk';
 
-import SymbolTableSelectors from './reducers/symbolTable'
-
 export default () => {
   const store = createStore(
-    combineReducers({
-      symbolTable: SymbolTableSelectors,
-    }),
+    combineReducers({}),
     compose(applyMiddleware(thunk))
   );
   return store;
