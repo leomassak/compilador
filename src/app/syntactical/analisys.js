@@ -14,6 +14,7 @@ function lerToken(index, tokenList) {
 function typeAnalysis(index, tokenList) {
     let response;
     if (SyntacticValidation.integerValidation(tokenList[index]) || SyntacticValidation.booleanValidation(tokenList[index])) {
+        SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme);
         response = lerToken(index, tokenList);
     } else {
         response = { error: true, description: `Esperado inteiro ou booleano, porem encontrado ${tokenList[index].lexeme}`, index, line: tokenList[index].line }
@@ -22,11 +23,13 @@ function typeAnalysis(index, tokenList) {
 }
 
 function varAnalysis(index, tokenList) {
-    let response = {};
+    let response = { error: false, index };
     do {
         if (SyntacticValidation.identifierValidation(tokenList[index])) {
             const isDuplicate = SymbolTable.searchDuplicateVariable(tokenList[index].lexeme)
-            console.log('checkDup', isDuplicate);
+            if (isDuplicate) return { error: true, description: `O identificador "${tokenList[index].lexeme}" já foi declarado!`, index, line: tokenList[index].line};
+
+            SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.VARIABLE);
             response = lerToken(index, tokenList);
             if (response.error) return response;
 
@@ -105,6 +108,7 @@ function subroutineDeclarationAnalysis(index, tokenList) {
             response = lerToken(response.index, tokenList);
             if (response.error) return response;
 
+            SymbolTable.increaseLevel();
             response = blockAnalisys(response.index, tokenList);
         } else {
             response = { error: true, description: `Esperado ponto e virgula, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
@@ -130,6 +134,7 @@ function functionDeclarationAnalysis(index, tokenList) {
 
             if (SyntacticValidation.booleanValidation(tokenList[response.index]) || SyntacticValidation.integerValidation(tokenList[response.index])) {
                 if (SyntacticValidation.semicolonValidation(tokenList[response.index])) {
+                    SymbolTable.increaseLevel();
                     response = blockAnalisys(response.index, tokenList);
                 }
             }
@@ -503,5 +508,6 @@ export function blockAnalisys(index, tokenList) {
         return commandsStepResponse;
     }
 
+    SymbolTable.decreaseLevel();
     return commandsStepResponse;
 }

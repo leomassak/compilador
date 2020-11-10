@@ -147,6 +147,7 @@ function CompilerScreen() {
           }
         }
       } else break;
+      console.log(SymbolTable.symbolTable);
     }
   }
 
@@ -174,6 +175,7 @@ function CompilerScreen() {
     setSyntacticErrorIndex(-1);
     setSyntacticError('');
     setSuccess(false);
+    SymbolTable.resetSymbolTable();
   }
 
   return (
