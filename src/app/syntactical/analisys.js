@@ -1,513 +1,361 @@
 import * as SyntacticValidation from './validations';
 import * as SymbolTable from '../symbolTable';
 
-function lerToken(index, tokenList) {
-    index += 1;
-    if (tokenList.length <= index) {
-        return { error: true, description: 'Arquivo chegou no fim, porém não foi encontrado o ponto', index, line: tokenList[index - 1].line }
-    } else if (tokenList[index].symbol === 'Erro') {
-        return { error: true, description: tokenList[index].lexeme, index, line: tokenList[index].line }
+export let index = 0;
+export let line = 0;
+
+export const reset = () => {
+  index = 0;
+  line = 0;
+}
+
+function lerToken(tokenList) {
+  index += 1;
+  if (tokenList.length <= index) throw new Error(`Erro - Linha ${line}: Arquivo chegou no fim, porém não foi encontrado o ponto`);
+  else if (tokenList[index].symbol === 'Erro') throw new Error(`Erro - Linha ${line}: ${tokenList[index].lexeme}`);
+  line = tokenList[index].line;
+}
+
+function typeAnalysis(tokenList) {
+  if (!SyntacticValidation.integerValidation(tokenList[index]) && !SyntacticValidation.booleanValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado inteiro ou booleano, porem encontrado ${tokenList[index].lexeme}`);
+
+  SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme);
+  lerToken(tokenList);
+}
+
+function varAnalysis(tokenList) {
+  do {
+    if (!SyntacticValidation.identifierValidation(tokenList[index]))
+      throw new Error(`Erro - Linha ${line}: Esperado um identificador, porem encontrado ${tokenList[index].lexeme}`);
+
+    const isDuplicate = SymbolTable.searchDuplicateVariable(tokenList[index].lexeme)
+    if (isDuplicate) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
+
+    SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.VARIABLE);
+    lerToken(tokenList);
+
+    if (!SyntacticValidation.commaValidation(tokenList[index]) && !SyntacticValidation.doublePointValidation(tokenList[index]))
+      throw new Error(`Erro - Linha ${line}: Esperado virgula ou dois pontos, porem encontrado ${tokenList[index].lexeme}`);
+
+    if (SyntacticValidation.commaValidation(tokenList[index])) {
+      lerToken(tokenList);
+      
+      if (SyntacticValidation.doublePointValidation(tokenList[index])) 
+        throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
     }
-    return { error: false, index };
+  } while (!SyntacticValidation.doublePointValidation(tokenList[index]));
+
+  lerToken(tokenList);
+
+  typeAnalysis(tokenList);
 }
 
-function typeAnalysis(index, tokenList) {
-    let response;
-    if (SyntacticValidation.integerValidation(tokenList[index]) || SyntacticValidation.booleanValidation(tokenList[index])) {
-        SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme);
-        response = lerToken(index, tokenList);
-    } else {
-        response = { error: true, description: `Esperado inteiro ou booleano, porem encontrado ${tokenList[index].lexeme}`, index, line: tokenList[index].line }
-    }
-    return response;
+function etVarAnalysis(tokenList) {
+  if (!SyntacticValidation.varValidation(tokenList[index])) return;
+
+  lerToken(tokenList);
+
+  if (!SyntacticValidation.identifierValidation(tokenList[index])) 
+    throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
+  
+  while (SyntacticValidation.identifierValidation(tokenList[index])) {
+    varAnalysis(tokenList);
+    
+    if (!SyntacticValidation.semicolonValidation(tokenList[index]))
+      throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`); 
+      
+    lerToken(tokenList);
+  }
 }
 
-function varAnalysis(index, tokenList) {
-    let response = { error: false, index };
-    do {
-        if (SyntacticValidation.identifierValidation(tokenList[index])) {
-            const isDuplicate = SymbolTable.searchDuplicateVariable(tokenList[index].lexeme)
-            if (isDuplicate) return { error: true, description: `O identificador "${tokenList[index].lexeme}" já foi declarado!`, index, line: tokenList[index].line};
+function subroutineDeclarationAnalysis(tokenList) {
+  lerToken(tokenList);
 
-            SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.VARIABLE);
-            response = lerToken(index, tokenList);
-            if (response.error) return response;
+  SymbolTable.increaseLevel();
 
-            if (SyntacticValidation.commaValidation(tokenList[response.index]) || SyntacticValidation.doublePointValidation(tokenList[response.index])) {
-                if (SyntacticValidation.commaValidation(tokenList[response.index])) {
-                    response = lerToken(response.index, tokenList);
-                    if (response.error) return response;
-                    
-                    if (SyntacticValidation.doublePointValidation(tokenList[response.index])) {
-                        response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index }
-                        break;
-                    }
-                }
-            } else {
-                response = { error: true, description: `Esperado virgula ou dois pontos, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index }
-                break;
-            }
-            index = response.index;
-        } else {
-            response = { error: true, description: `Esperado um identificador, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
-            break;
-        }
-    } while (!SyntacticValidation.doublePointValidation(tokenList[index]));
-    if (!response.error) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
-        const typeResponse = typeAnalysis(response.index, tokenList);
-        if (typeResponse.error) {
-            response = typeResponse;
-        } else {
-            response = { error: false, index: typeResponse.index };
-        }
-    }
-    return response;
+  if (!SyntacticValidation.identifierValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
+
+  const found = SymbolTable.searchDeclarationProcedure(tokenList[index].lexeme);
+  if (found) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
+
+  SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.PROCEDURE)
+
+  lerToken(tokenList);
+
+  if (!SyntacticValidation.semicolonValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`);
+
+  blockAnalisys(tokenList);
+
+  SymbolTable.decreaseLevel();
 }
 
-function etVarAnalysis(index, tokenList) {
-    let response = { error: false, index };
-    if (SyntacticValidation.varValidation(tokenList[index])) {
-        response = lerToken(response.index, tokenList);
-        if (response.error) return response;
-        if (SyntacticValidation.identifierValidation(tokenList[response.index])) {
-            index = response.index;
-            while (SyntacticValidation.identifierValidation(tokenList[index])) {
-                response = varAnalysis(response.index, tokenList);
+function functionDeclarationAnalysis(tokenList) {
+  lerToken(tokenList);
 
-                if (!response.error) {
-                    index = response.index;
-                    if (SyntacticValidation.semicolonValidation(tokenList[index])) {
-                        response = lerToken(response.index, tokenList);
-                        if (response.error) break;
-                    } else {
-                        response = { error: true, description: `Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
-                        break;
-                    }
-                } else break;
-                index = response.index;
-            }
-        } else {
-            response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
-        }
-    }
-    return response;
+  SymbolTable.increaseLevel();
+
+  if (!SyntacticValidation.identifierValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
+
+  const found = SymbolTable.searchDeclarationFunction(tokenList[index].lexeme);
+  if (found) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
+
+  console.log('inserindo na tabela', tokenList[index].lexeme, SymbolTable.TokenType.FUNCTION)
+  SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.FUNCTION)
+
+  lerToken(tokenList);
+
+  if (!SyntacticValidation.doublePointValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado dois pontos, porem encontrado ${tokenList[index].lexeme}`);
+  
+  lerToken(tokenList);
+
+  if (!SyntacticValidation.booleanValidation(tokenList[index]) && !SyntacticValidation.integerValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado booleano ou inteiro, porem encontrado ${tokenList[index].lexeme}`);
+
+  if (SyntacticValidation.booleanValidation(tokenList[index])) {
+      SymbolTable.changeFunctionType(SymbolTable.TokenType.BOOLEAN_FUNCTION);
+  } else {
+      SymbolTable.changeFunctionType(SymbolTable.TokenType.INTEGER_FUNCTION);
+  }
+
+  lerToken(tokenList);
+
+  if (SyntacticValidation.semicolonValidation(tokenList[index])) blockAnalisys(tokenList);
+
+  SymbolTable.decreaseLevel();
 }
 
-function subroutineDeclarationAnalysis(index, tokenList) {
-    let response = {};
-    response = lerToken(index, tokenList);
-    if (response.error) return response;
+function subroutineAnalysis(tokenList) {
+  while (SyntacticValidation.procedureValidation(tokenList[index]) || SyntacticValidation.functionValidation(tokenList[index])) {
+    if (SyntacticValidation.procedureValidation(tokenList[index])) subroutineDeclarationAnalysis(tokenList);
+    else functionDeclarationAnalysis(tokenList);
 
-    if (SyntacticValidation.identifierValidation(tokenList[response.index])) {
-        response = lerToken(response.index, tokenList);
-        if (response.error) return response;
-
-        if (SyntacticValidation.semicolonValidation(tokenList[response.index])) {
-            response = lerToken(response.index, tokenList);
-            if (response.error) return response;
-
-            SymbolTable.increaseLevel();
-            response = blockAnalisys(response.index, tokenList);
-        } else {
-            response = { error: true, description: `Esperado ponto e virgula, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-        }
-    } else {
-        response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-    }
-    return response;
+    if (!SyntacticValidation.semicolonValidation(tokenList[index]))
+      throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`);
+  
+    lerToken(tokenList);
+  }
 }
 
-function functionDeclarationAnalysis(index, tokenList) {
-    let response = { error: false, index };
-    response = lerToken(index, tokenList);
-    if (response.error) return response;
+function expressionAnalysis(tokenList) {
+  simpleExpressionAnalysis(tokenList);
 
-    if (SyntacticValidation.identifierValidation(tokenList[response.index])) {
-        response = lerToken(response.index, tokenList);
-        if (response.error) return response;
-
-        if (SyntacticValidation.doublePointValidation(tokenList[response.index])) {
-            response = lerToken(response.index, tokenList);
-            if (response.error) return response;
-
-            if (SyntacticValidation.booleanValidation(tokenList[response.index]) || SyntacticValidation.integerValidation(tokenList[response.index])) {
-                if (SyntacticValidation.semicolonValidation(tokenList[response.index])) {
-                    SymbolTable.increaseLevel();
-                    response = blockAnalisys(response.index, tokenList);
-                }
-            }
-            else {
-                response = { error: true, description: `Esperado booleano ou inteiro, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-            }
-        } else {
-            response = { error: true, description: `Esperado dois pontos, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-        }
-    } else {
-        response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-    }
-    return response;
+  if (SyntacticValidation.biggerValidation(tokenList[index])
+      || SyntacticValidation.bigEqualValidation(tokenList[index])
+      || SyntacticValidation.equalValidation(tokenList[index])
+      || SyntacticValidation.lowerValidation(tokenList[index])
+      || SyntacticValidation.lowerEqualValidation(tokenList[index])
+      || SyntacticValidation.diffValidation(tokenList[index])) {
+    
+    lerToken(tokenList);
+     
+    simpleExpressionAnalysis(tokenList);
+  }
 }
 
-function subroutineAnalysis(index, tokenList) {
-    let response = { error: false, index };
+function simpleExpressionAnalysis(tokenList) {
+  if (SyntacticValidation.plusValidation(tokenList[index])
+    || SyntacticValidation.minusValidation(tokenList[index])) lerToken(tokenList);
+  
+  termAnalisys(tokenList);
 
-    while (SyntacticValidation.procedureValidation(tokenList[index]) || SyntacticValidation.functionValidation(tokenList[index])) {
-        if (SyntacticValidation.procedureValidation(tokenList[index])) {
-            response = subroutineDeclarationAnalysis(index, tokenList);
-        } else {
-            response = functionDeclarationAnalysis(index, tokenList);
-        }
-        if (!response.error) {
-            index = response.index;
-            if (SyntacticValidation.semicolonValidation(tokenList[index])) {
-                response = lerToken(index, tokenList);
-                if (response.error) return response;
+  while (SyntacticValidation.plusValidation(tokenList[index])
+      || SyntacticValidation.minusValidation(tokenList[index])
+      || SyntacticValidation.orValidation(tokenList[index])) {
+    
+    lerToken(tokenList);
 
-                response = { error: false, index: response.index };
-            } else {
-                response = { error: true, description: `Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index }
-                break;
-            }
-        } else {
-            break;
-        }
-        index = response.index;
-    }
-
-    return response;
+    termAnalisys(tokenList);
+  }
 }
 
-function expressionAnalysis(index, tokenList) {
-    let response = { error: false, index };
-    response = simpleExpressionAnalysis(index, tokenList);
-    if (response.error) return response;
-    index = response.index;
-    if (SyntacticValidation.biggerValidation(tokenList[index])
-        || SyntacticValidation.bigEqualValidation(tokenList[index])
-        || SyntacticValidation.equalValidation(tokenList[index])
-        || SyntacticValidation.lowerValidation(tokenList[index])
-        || SyntacticValidation.lowerEqualValidation(tokenList[index])
-        || SyntacticValidation.diffValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
+export function procedureAnalysis(tokenList) { }
 
-        response = simpleExpressionAnalysis(response.index, tokenList);
-        return response;
-    }
-
-    return { error: false, index };
+export function functionCallAnalisys(tokenList) {
+  lerToken(tokenList);
 }
 
-function simpleExpressionAnalysis(index, tokenList) {
-    let response = {};
-    if (SyntacticValidation.plusValidation(tokenList[index]) || SyntacticValidation.minusValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
-        else index = response.index;
-    }
-    response = termAnalisys(index, tokenList);
-    if (response.error) return response;
-
-    index = response.index;
-    while (SyntacticValidation.plusValidation(tokenList[index])
-        || SyntacticValidation.minusValidation(tokenList[index])
-        || SyntacticValidation.orValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
-
-        response = termAnalisys(response.index, tokenList);
-        return response;
-    }
-
-    return { error: false, index };
-}
-
-export function procedureAnalysis(index, tokenList) {
-    return { error: false, index };
-}
-
-export function functionCallAnalisys(index, tokenList) {
-    let response = lerToken(index, tokenList);
-    if (response.error) return response;
-    return { error: false, index: response.index };
-}
-
-export function assignmentAnalysis(index, tokenList) {
-    let response = lerToken(index, tokenList);
-    if (response.error) return response;
-
-    response = expressionAnalysis(response.index, tokenList);
-    return response;
+export function assignmentAnalysis(tokenList) {
+  lerToken(tokenList);
+  
+  expressionAnalysis(tokenList);
 }
 
 
-export function factorAnalisys(index, tokenList) {
-    let response = { error: false, index };
+export function factorAnalisys(tokenList) {
+  if (SyntacticValidation.identifierValidation(tokenList[index])) functionCallAnalisys(tokenList);
+  
+  else if (SyntacticValidation.numberValidation(tokenList[index])) lerToken(tokenList);
 
-    if (SyntacticValidation.identifierValidation(tokenList[index])) {
-        response = functionCallAnalisys(index, tokenList);
-        return response;
-    } else if (SyntacticValidation.numberValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
+  else if (SyntacticValidation.notValidation(tokenList[index])) {
+    lerToken(tokenList);
+    
+    factorAnalisys(tokenList);
+  } else if (SyntacticValidation.openBracketValidation(tokenList[index])) {
+    lerToken(tokenList);
 
-        return { error: false, index: response.index };
-    } else if (SyntacticValidation.notValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
+    expressionAnalysis(tokenList);
 
-        response = factorAnalisys(response.index, tokenList);
-        return response;
-    } else if (SyntacticValidation.openBracketValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
-
-        response = expressionAnalysis(response.index, tokenList);
-
-        if (!response.error) {
-            index = response.index;
-            if (SyntacticValidation.closeBracketValidation(tokenList[index])) {
-                response = lerToken(index, tokenList);
-                if (response.error) return response;
-
-                return { error: false, index: response.index };
-            } else {
-                return { error: true, description: `Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
-            }
-        }
-        return response;
-    } else if (SyntacticValidation.trueValidation(tokenList[index]) || SyntacticValidation.falseValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
-
-        return { error: false, index: response.index };
-    } else {
-        return { error: true, description: `Esperado um fator, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
-    }
+    if (!SyntacticValidation.closeBracketValidation(tokenList[index]))
+      throw new Error(`Erro - Linha ${line}: Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`);
+    
+    lerToken(tokenList);
+  } else if (SyntacticValidation.trueValidation(tokenList[index]) || SyntacticValidation.falseValidation(tokenList[index])) {
+    lerToken(tokenList);
+  } else throw new Error(`Erro - Linha ${line}: Esperado um fator, porem encontrado ${tokenList[index].lexeme}`);
 }
 
-export function termAnalisys(index, tokenList) {
-    let response = factorAnalisys(index, tokenList);
-    if (response.error) return response;
+export function termAnalisys(tokenList) {
+  factorAnalisys(tokenList);
 
-    index = response.index;
-    while (SyntacticValidation.multValidation(tokenList[index])
-        || SyntacticValidation.divValidation(tokenList[index])
-        || SyntacticValidation.andValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
+  while (SyntacticValidation.multValidation(tokenList[index])
+      || SyntacticValidation.divValidation(tokenList[index])
+      || SyntacticValidation.andValidation(tokenList[index])) {
+    
+    lerToken(tokenList);
 
-        response = factorAnalisys(response.index, tokenList);
-        return response;
-    }
-
-    return { error: false, index };
+    factorAnalisys(tokenList);
+  }
 }
 
-function assignmentOrProcedureAnalysis(index, tokenList) {
-    let response = { error: false, index };
-    response = lerToken(index, tokenList);
-    if (response.error) return response;
+function assignmentOrProcedureAnalysis(tokenList) {
+  lerToken(tokenList);
 
-    if (SyntacticValidation.assignmentValidation(tokenList[response.index])) {
-        response = assignmentAnalysis(response.index, tokenList);
-    } else {
-        response = procedureAnalysis(response.index, tokenList);
-    }
-
-    return response;
+  if (SyntacticValidation.assignmentValidation(tokenList[index])) assignmentAnalysis(tokenList);
+  else procedureAnalysis(tokenList);
 }
 
-function ifAnalysis(index, tokenList) {
-    let response = { error: false, index };
+function ifAnalysis(tokenList) {
+  lerToken(tokenList);
+  
+  expressionAnalysis(tokenList);
+  if (SyntacticValidation.elseValidation(tokenList[index])) {
+    
+    lerToken(tokenList);
 
-    response = lerToken(index, tokenList);
-    if (response.error) return response;
-
-    response = expressionAnalysis(response.index, tokenList);
-    index = response.index;
-    if (!response.error && SyntacticValidation.elseValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
-
-        response = simpleCommandAnalysis(response.index, tokenList);
-        index = response.index;
-        if (!response.error && SyntacticValidation.elseIfValidation(tokenList[index])) {
-            response = lerToken(index, tokenList);
-            if (response.error) return response;
-            response = simpleCommandAnalysis(response.index, tokenList);
-        }
+    simpleCommandAnalysis(tokenList);
+    if (SyntacticValidation.elseIfValidation(tokenList[index])) {
+      lerToken(tokenList);
+      
+      simpleCommandAnalysis(tokenList);
     }
-
-    return response;
+  }
 }
 
-function whileAnalysis(index, tokenList) {
-    let response = { error: false, index };
+function whileAnalysis(tokenList) {
+  lerToken(tokenList);
 
-    response = lerToken(index, tokenList);
-    if (response.error) return response;
+  expressionAnalysis(tokenList);
 
-    response = expressionAnalysis(response.index, tokenList);
-    index = response.index;
-    if (response.error) return response;
+  if (!SyntacticValidation.doValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado um fator, porem encontrado ${tokenList[index].lexeme}`);
 
-    if (SyntacticValidation.doValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
-
-        response = simpleCommandAnalysis(response.index, tokenList);
-        index = response.index;
-    } else {
-        response = { error: true, description: `Esperado o comando faça, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
-    }
-
-    return response;
+  lerToken(tokenList);
+  
+  simpleCommandAnalysis(tokenList);
 }
 
-function readAnalysis(index, tokenList) {
-    let response = { error: false, index };
+function readAnalysis(tokenList) {
+  lerToken(tokenList);
 
-    response = lerToken(index, tokenList);
-    if (response.error) return response;
+  if (!SyntacticValidation.openBracketValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado abre parênteses, porem encontrado ${tokenList[index].lexeme}`);
+  
+  lerToken(tokenList);
+  
+  if (!SyntacticValidation.identifierValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
+  
+  lerToken(tokenList);
 
-    if (SyntacticValidation.openBracketValidation(tokenList[response.index])) {
-        response = lerToken(response.index, tokenList);
-        if (response.error) return response;
-
-        if (SyntacticValidation.identifierValidation(tokenList[response.index])) {
-            response = lerToken(response.index, tokenList);
-            if (response.error) return response;
-
-            if (SyntacticValidation.closeBracketValidation(tokenList[response.index])) {
-                response = lerToken(response.index, tokenList);
-                if (response.error) return response;
-
-            } else {
-                response = { error: true, description: `Esperado fecha parênteses, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-            }
-        } else {
-            response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-        }
-    } else {
-        response = { error: true, description: `Esperado abre parênteses, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-    }
-
-    return response;
+  if (!SyntacticValidation.closeBracketValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`);
+  
+  lerToken(tokenList);
 }
 
-function writeAnalysis(index, tokenList) {
-    let response = { error: false, index };
+function writeAnalysis(tokenList) {
+  lerToken(tokenList);
 
-    response = lerToken(index, tokenList);
-    if (response.error) return response;
+  if (!SyntacticValidation.openBracketValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado abre parênteses, porem encontrado ${tokenList[index].lexeme}`);
 
-    if (SyntacticValidation.openBracketValidation(tokenList[response.index])) {
-        response = lerToken(response.index, tokenList);
-        if (response.error) return response;
+  lerToken(tokenList);
 
-        if (SyntacticValidation.identifierValidation(tokenList[response.index])) {
-            response = lerToken(response.index, tokenList);
-            if (response.error) return response;
+  if (!SyntacticValidation.identifierValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-            if (SyntacticValidation.closeBracketValidation(tokenList[response.index])) {
-                response = lerToken(response.index, tokenList);
-                if (response.error) return response;
+  lerToken(tokenList);
 
-            } else {
-                response = { error: true, description: `Esperado fecha parênteses, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-            }
-        } else {
-            response = { error: true, description: `Esperado identificador, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-        }
-    } else {
-        response = { error: true, description: `Esperado abre parênteses, porem encontrado ${tokenList[response.index].lexeme}`, line: tokenList[response.index].line, index: response.index };
-    }
+  if (!SyntacticValidation.closeBracketValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`);
 
-    return response;
+  lerToken(tokenList);
 }
 
-function simpleCommandAnalysis(index, tokenList) {
-    let response = { error: false, index };
+function simpleCommandAnalysis(tokenList) {
+  if (SyntacticValidation.identifierValidation(tokenList[index])) assignmentOrProcedureAnalysis(tokenList);
 
-    if (SyntacticValidation.identifierValidation(tokenList[index])) {
-        response = assignmentOrProcedureAnalysis(index, tokenList);
+  else if (SyntacticValidation.ifValidation(tokenList[index])) ifAnalysis(tokenList);
 
-    } else if (SyntacticValidation.ifValidation(tokenList[index])) {
-        response = ifAnalysis(index, tokenList);
+  else if (SyntacticValidation.whileValidation(tokenList[index])) whileAnalysis(tokenList);
 
-    } else if (SyntacticValidation.whileValidation(tokenList[index])) {
-        response = whileAnalysis(index, tokenList);
+  else if (SyntacticValidation.readValidation(tokenList[index])) readAnalysis(tokenList);
 
-    } else if (SyntacticValidation.readValidation(tokenList[index])) {
-        response = readAnalysis(index, tokenList);
+  else if (SyntacticValidation.writeValidation(tokenList[index])) writeAnalysis(tokenList);
 
-    } else if (SyntacticValidation.writeValidation(tokenList[index])) {
-        response = writeAnalysis(index, tokenList);
-
-    } else {
-        response = commandAnalysis(index, tokenList);
-
-    }
-
-    return response;
+  else commandAnalysis(tokenList);
 }
 
-function commandAnalysis(index, tokenList) {
-    let response = { error: false, index };
+function commandAnalysis(tokenList) {
+  if (!SyntacticValidation.initValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado inicio, porem encontrado ${tokenList[index].lexeme}`);
 
-    if (SyntacticValidation.initValidation(tokenList[index])) {
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
+  lerToken(tokenList);
 
-        response = simpleCommandAnalysis(response.index, tokenList);
-        if (response.error) return response;
-        index = response.index;
+  simpleCommandAnalysis(tokenList);
 
-        while (!SyntacticValidation.endValidation(tokenList[index])) {
-            if (SyntacticValidation.semicolonValidation(tokenList[index])) {
-                response = lerToken(index, tokenList);
-                if (response.error) return response;
+  while (!SyntacticValidation.endValidation(tokenList[index])) {
+    if (!SyntacticValidation.semicolonValidation(tokenList[index]))
+      throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`);
+    
+    lerToken(tokenList);
+    if (!SyntacticValidation.endValidation(tokenList[index])) simpleCommandAnalysis(tokenList);
+  }
 
-                if (!SyntacticValidation.endValidation(tokenList[response.index])) {
-                    response = simpleCommandAnalysis(response.index, tokenList);
-                    if (response.error) return response;
-                }
-
-                index = response.index;
-            } else {
-                return { error: true, description: `Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
-            }
-        }
-
-        response = lerToken(index, tokenList);
-        if (response.error) return response;
-        response = { error: false, index: response.index };
-    } else {
-        response = { error: true, description: `Esperado inicio, porem encontrado ${tokenList[index].lexeme}`, line: tokenList[index].line, index };
-    }
-
-    return response;
+  lerToken(tokenList);
 }
 
-export function blockAnalisys(index, tokenList) {
-    const varStepResponse = etVarAnalysis(index, tokenList);
-    if (varStepResponse.error) {
-        return varStepResponse;
-    }
+function blockAnalisys(tokenList) {
+  lerToken(tokenList);
 
-    const subroutineStepResponse = subroutineAnalysis(varStepResponse.index, tokenList);
-    if (subroutineStepResponse.error) {
-        return subroutineStepResponse;
-    }
+  etVarAnalysis(tokenList);
 
-    const commandsStepResponse = commandAnalysis(subroutineStepResponse.index, tokenList);
-    if (commandsStepResponse.error) {
-        return commandsStepResponse;
-    }
+  subroutineAnalysis(tokenList);
 
-    SymbolTable.decreaseLevel();
-    return commandsStepResponse;
+  commandAnalysis(tokenList);
+}
+
+export function initSyntacticalAnalisys(tokenList) {
+  line = tokenList[index].line;
+  if (!SyntacticValidation.initialValidation(tokenList[index])) throw new Error(`Erro - Linha ${line}: Esperado comando ínicio, porem encontrado comando ${tokenList[index].lexeme}`);
+
+  lerToken(tokenList);
+
+  if (!SyntacticValidation.identifierValidation(tokenList[index])) throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
+  SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.PROGRAM)
+  
+  lerToken(tokenList);
+
+  if (!SyntacticValidation.semicolonValidation(tokenList[index])) throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado  ${tokenList[index].lexeme}`);
+
+  blockAnalisys(tokenList);
+
+  if (SyntacticValidation.pointValidation(tokenList[index])) {
+    if (index !== tokenList.length - 1) throw new Error(`Erro - Linha ${line}: Tokens existentes após o ponto`);
+  } else throw new Error(`Erro - Linha ${line}: Não encontrado ponto no fim do arquivo`);
 }

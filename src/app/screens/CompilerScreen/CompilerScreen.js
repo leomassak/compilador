@@ -102,52 +102,12 @@ function CompilerScreen() {
   }
 
   function syntacticAnalysis(lexicalTokenList) {
-    // console.log(lexicalTokenList);
-    for(let index = 0; index < lexicalTokenList.length; index++){
-      if (lexicalTokenList[index].symbol !== 'Erro') {
-        if (index === 0) {
-          if (!SyntacticValidation.initialValidation(lexicalTokenList[index])) {
-            setSyntacticErrorIndex(index);
-            setSyntacticError({ line: lexicalTokenList[index].line, description: `Esperado comando ínicio, porem encontrado comando ${lexicalTokenList[index].lexeme}` });
-            break;
-          }
-        } else if (index === 1) {
-          if (!SyntacticValidation.identifierValidation(lexicalTokenList[index])) {
-            setSyntacticErrorIndex(index);
-            setSyntacticError({ line: lexicalTokenList[index].line, description: `Esperado identificador, porem encontrado ${lexicalTokenList[index].lexeme}` });
-            break;
-          }
-          SymbolTable.insertInSymbolTable(lexicalTokenList[index].lexeme, SymbolTable.TokenType.PROGRAM)
-        } else if (index === 2) {
-          if (!SyntacticValidation.semicolonValidation(lexicalTokenList[index])) {
-            setSyntacticErrorIndex(index);
-            setSyntacticError({ line: lexicalTokenList[index].line, description: `Esperado ponto e virgula, porem encontrado ${lexicalTokenList[index].lexeme}` });
-            break;
-          }
-        } else {
-          const response = SyntacticAnalysis.blockAnalisys(index, lexicalTokenList);
-          if (response.error) {
-            setSyntacticErrorIndex(response.index);
-            setSyntacticError({ line: response.line, description: response.description });
-            break;
-          }  else if (SyntacticValidation.pointValidation(lexicalTokenList[response.index])) {
-            index = response.index
-            if (index === lexicalTokenList.length - 1) {
-              setSuccess(true);
-              break;
-            } else {
-              setSyntacticErrorIndex(response.index);
-              setSyntacticError({ line: lexicalTokenList[response.index + 1].line, description: 'Tokens existentes após o ponto' });
-              break;
-            }
-          } else {
-            setSyntacticErrorIndex(response.index);
-            setSyntacticError({ line: lexicalTokenList[response.index + 1].line, description: `Esperado ponto, porem encontrado ${lexicalTokenList[index].lexeme}` });
-            break;
-          }
-        }
-      } else break;
-      console.log(SymbolTable.symbolTable);
+    try {
+      SyntacticAnalysis.initSyntacticalAnalisys(lexicalTokenList);
+      setSuccess(true);
+    } catch (err) {
+      setSyntacticError(err.message);
+      setSyntacticErrorIndex(SyntacticAnalysis.index);
     }
   }
 
@@ -176,6 +136,7 @@ function CompilerScreen() {
     setSyntacticError('');
     setSuccess(false);
     SymbolTable.resetSymbolTable();
+    SyntacticAnalysis.reset();
   }
 
   return (
@@ -236,15 +197,9 @@ function CompilerScreen() {
           </>
         ))}
         {syntacticErrorIndex >= 0 && (
-          <>
-            <p className="panel-error-text-lines">
-              {`Linha -> ${syntacticError.line}`}
-            </p>
-            <p className="panel-error-text-lines">
-              {`Erro -> ${syntacticError.description}`}
-              <br />
-            </p>
-          </>
+          <p className="panel-error-text-lines">
+            {syntacticError}
+          </p>
         )}
         {success && (
           <p className="panel-success-text-lines">
