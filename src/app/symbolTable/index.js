@@ -44,8 +44,11 @@ export const increaseLevel = () => {
 }
 
 export const decreaseLevel = () => {
-  const filteredSymbolTable = symbolTable.filter((item) => item.tokenLevel !== level);
+  console.log('antes da diminuição de nível', symbolTable);
+  const filteredSymbolTable = symbolTable.filter((item) => item.tokenLevel !== level
+    || (item.tokenLevel === level && (item.tokenFunc === TokenType.BOOLEAN_FUNCTION || item.tokenFunc === TokenType.INTEGER_FUNCTION)));
   symbolTable = filteredSymbolTable;
+  console.log('depois da diminuição de nível', symbolTable);
 
   if (level !== 1) level -= 1;
   else console.log('ERRO NO NÍVEL!');

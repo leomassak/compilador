@@ -3,146 +3,147 @@ import * as SymbolTable from '../symbolTable';
 
 export let index = 0;
 export let line = 0;
+export let tokenList = [];
 
 export const reset = () => {
   index = 0;
   line = 0;
 }
 
-function lerToken(tokenList) {
+function lerToken() {
   index += 1;
   if (tokenList.length <= index) throw new Error(`Erro - Linha ${line}: Arquivo chegou no fim, porém não foi encontrado o ponto`);
   else if (tokenList[index].symbol === 'Erro') throw new Error(`Erro - Linha ${line}: ${tokenList[index].lexeme}`);
   line = tokenList[index].line;
 }
 
-function typeAnalysis(tokenList) {
+function typeAnalysis() {
   if (!SyntacticValidation.integerValidation(tokenList[index]) && !SyntacticValidation.booleanValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado inteiro ou booleano, porem encontrado ${tokenList[index].lexeme}`);
 
-  SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme);
-  lerToken(tokenList);
+  // SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme);
+  lerToken();
 }
 
-function varAnalysis(tokenList) {
+function varAnalysis() {
   do {
     if (!SyntacticValidation.identifierValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado um identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-    const isDuplicate = SymbolTable.searchDuplicateVariable(tokenList[index].lexeme)
-    if (isDuplicate) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
+    // const isDuplicate = SymbolTable.searchDuplicateVariable(tokenList[index].lexeme)
+    // if (isDuplicate) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
 
-    SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.VARIABLE);
-    lerToken(tokenList);
+    // SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.VARIABLE);
+    lerToken();
 
     if (!SyntacticValidation.commaValidation(tokenList[index]) && !SyntacticValidation.doublePointValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado virgula ou dois pontos, porem encontrado ${tokenList[index].lexeme}`);
 
     if (SyntacticValidation.commaValidation(tokenList[index])) {
-      lerToken(tokenList);
+      lerToken();
       
       if (SyntacticValidation.doublePointValidation(tokenList[index])) 
         throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
     }
   } while (!SyntacticValidation.doublePointValidation(tokenList[index]));
 
-  lerToken(tokenList);
+  lerToken();
 
-  typeAnalysis(tokenList);
+  typeAnalysis();
 }
 
-function etVarAnalysis(tokenList) {
+function etVarAnalysis() {
   if (!SyntacticValidation.varValidation(tokenList[index])) return;
 
-  lerToken(tokenList);
+  lerToken();
 
   if (!SyntacticValidation.identifierValidation(tokenList[index])) 
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
   
   while (SyntacticValidation.identifierValidation(tokenList[index])) {
-    varAnalysis(tokenList);
+    varAnalysis();
     
     if (!SyntacticValidation.semicolonValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`); 
       
-    lerToken(tokenList);
+    lerToken();
   }
 }
 
-function subroutineDeclarationAnalysis(tokenList) {
-  lerToken(tokenList);
+function subroutineDeclarationAnalysis() {
+  lerToken();
 
-  SymbolTable.increaseLevel();
+  // SymbolTable.increaseLevel();
 
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-  const found = SymbolTable.searchDeclarationProcedure(tokenList[index].lexeme);
-  if (found) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
+  // const found = SymbolTable.searchDeclarationProcedure(tokenList[index].lexeme);
+  // if (found) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
 
-  SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.PROCEDURE)
+  // SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.PROCEDURE)
 
-  lerToken(tokenList);
+  lerToken();
 
   if (!SyntacticValidation.semicolonValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`);
 
-  blockAnalisys(tokenList);
+  blockAnalisys();
 
-  SymbolTable.decreaseLevel();
+  // SymbolTable.decreaseLevel();
 }
 
-function functionDeclarationAnalysis(tokenList) {
-  lerToken(tokenList);
+function functionDeclarationAnalysis() {
+  lerToken();
 
-  SymbolTable.increaseLevel();
+  // SymbolTable.increaseLevel();
 
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-  const found = SymbolTable.searchDeclarationFunction(tokenList[index].lexeme);
-  if (found) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
+  // const found = SymbolTable.searchDeclarationFunction(tokenList[index].lexeme);
+  // if (found) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
 
-  console.log('inserindo na tabela', tokenList[index].lexeme, SymbolTable.TokenType.FUNCTION)
-  SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.FUNCTION)
+  // console.log('inserindo na tabela', tokenList[index].lexeme, SymbolTable.TokenType.FUNCTION)
+  // SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.FUNCTION)
 
-  lerToken(tokenList);
+  lerToken();
 
   if (!SyntacticValidation.doublePointValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado dois pontos, porem encontrado ${tokenList[index].lexeme}`);
   
-  lerToken(tokenList);
+  lerToken();
 
   if (!SyntacticValidation.booleanValidation(tokenList[index]) && !SyntacticValidation.integerValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado booleano ou inteiro, porem encontrado ${tokenList[index].lexeme}`);
 
-  if (SyntacticValidation.booleanValidation(tokenList[index])) {
-      SymbolTable.changeFunctionType(SymbolTable.TokenType.BOOLEAN_FUNCTION);
-  } else {
-      SymbolTable.changeFunctionType(SymbolTable.TokenType.INTEGER_FUNCTION);
-  }
+  // if (SyntacticValidation.booleanValidation(tokenList[index])) {
+  //     SymbolTable.changeFunctionType(SymbolTable.TokenType.BOOLEAN_FUNCTION);
+  // } else {
+  //     SymbolTable.changeFunctionType(SymbolTable.TokenType.INTEGER_FUNCTION);
+  // }
 
-  lerToken(tokenList);
+  lerToken();
 
-  if (SyntacticValidation.semicolonValidation(tokenList[index])) blockAnalisys(tokenList);
+  if (SyntacticValidation.semicolonValidation(tokenList[index])) blockAnalisys();
 
-  SymbolTable.decreaseLevel();
+  // SymbolTable.decreaseLevel();
 }
 
-function subroutineAnalysis(tokenList) {
+function subroutineAnalysis() {
   while (SyntacticValidation.procedureValidation(tokenList[index]) || SyntacticValidation.functionValidation(tokenList[index])) {
-    if (SyntacticValidation.procedureValidation(tokenList[index])) subroutineDeclarationAnalysis(tokenList);
-    else functionDeclarationAnalysis(tokenList);
+    if (SyntacticValidation.procedureValidation(tokenList[index])) subroutineDeclarationAnalysis();
+    else functionDeclarationAnalysis();
 
     if (!SyntacticValidation.semicolonValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`);
   
-    lerToken(tokenList);
+    lerToken();
   }
 }
 
-function expressionAnalysis(tokenList) {
-  simpleExpressionAnalysis(tokenList);
+function expressionAnalysis() {
+  simpleExpressionAnalysis();
 
   if (SyntacticValidation.biggerValidation(tokenList[index])
       || SyntacticValidation.bigEqualValidation(tokenList[index])
@@ -151,209 +152,214 @@ function expressionAnalysis(tokenList) {
       || SyntacticValidation.lowerEqualValidation(tokenList[index])
       || SyntacticValidation.diffValidation(tokenList[index])) {
     
-    lerToken(tokenList);
+    lerToken();
      
-    simpleExpressionAnalysis(tokenList);
+    simpleExpressionAnalysis();
   }
 }
 
-function simpleExpressionAnalysis(tokenList) {
+function simpleExpressionAnalysis() {
   if (SyntacticValidation.plusValidation(tokenList[index])
-    || SyntacticValidation.minusValidation(tokenList[index])) lerToken(tokenList);
+    || SyntacticValidation.minusValidation(tokenList[index])) lerToken();
   
-  termAnalisys(tokenList);
+  termAnalisys();
 
   while (SyntacticValidation.plusValidation(tokenList[index])
       || SyntacticValidation.minusValidation(tokenList[index])
       || SyntacticValidation.orValidation(tokenList[index])) {
     
-    lerToken(tokenList);
+    lerToken();
 
-    termAnalisys(tokenList);
+    termAnalisys();
   }
 }
 
-export function procedureAnalysis(tokenList) { }
+export function procedureAnalysis() { }
 
-export function functionCallAnalisys(tokenList) {
-  lerToken(tokenList);
+export function functionCallAnalisys() {
+  lerToken();
 }
 
-export function assignmentAnalysis(tokenList) {
-  lerToken(tokenList);
+export function assignmentAnalysis() {
+  lerToken();
   
-  expressionAnalysis(tokenList);
+  expressionAnalysis();
 }
 
 
-export function factorAnalisys(tokenList) {
-  if (SyntacticValidation.identifierValidation(tokenList[index])) functionCallAnalisys(tokenList);
+export function factorAnalisys() {
+  if (SyntacticValidation.identifierValidation(tokenList[index])) functionCallAnalisys();
   
-  else if (SyntacticValidation.numberValidation(tokenList[index])) lerToken(tokenList);
+  else if (SyntacticValidation.numberValidation(tokenList[index])) lerToken();
 
   else if (SyntacticValidation.notValidation(tokenList[index])) {
-    lerToken(tokenList);
+    lerToken();
     
-    factorAnalisys(tokenList);
+    factorAnalisys();
   } else if (SyntacticValidation.openBracketValidation(tokenList[index])) {
-    lerToken(tokenList);
+    lerToken();
 
-    expressionAnalysis(tokenList);
+    expressionAnalysis();
 
     if (!SyntacticValidation.closeBracketValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`);
     
-    lerToken(tokenList);
+    lerToken();
   } else if (SyntacticValidation.trueValidation(tokenList[index]) || SyntacticValidation.falseValidation(tokenList[index])) {
-    lerToken(tokenList);
+    lerToken();
   } else throw new Error(`Erro - Linha ${line}: Esperado um fator, porem encontrado ${tokenList[index].lexeme}`);
 }
 
-export function termAnalisys(tokenList) {
-  factorAnalisys(tokenList);
+export function termAnalisys() {
+  factorAnalisys();
 
   while (SyntacticValidation.multValidation(tokenList[index])
       || SyntacticValidation.divValidation(tokenList[index])
       || SyntacticValidation.andValidation(tokenList[index])) {
     
-    lerToken(tokenList);
+    lerToken();
 
-    factorAnalisys(tokenList);
+    factorAnalisys();
   }
 }
 
-function assignmentOrProcedureAnalysis(tokenList) {
-  lerToken(tokenList);
+function assignmentOrProcedureAnalysis() {
+  lerToken();
 
-  if (SyntacticValidation.assignmentValidation(tokenList[index])) assignmentAnalysis(tokenList);
-  else procedureAnalysis(tokenList);
+  if (SyntacticValidation.assignmentValidation(tokenList[index])) assignmentAnalysis();
+  else procedureAnalysis();
 }
 
-function ifAnalysis(tokenList) {
-  lerToken(tokenList);
+function ifAnalysis() {
+  lerToken();
   
-  expressionAnalysis(tokenList);
+  expressionAnalysis();
   if (SyntacticValidation.elseValidation(tokenList[index])) {
     
-    lerToken(tokenList);
+    lerToken();
 
-    simpleCommandAnalysis(tokenList);
+    simpleCommandAnalysis();
     if (SyntacticValidation.elseIfValidation(tokenList[index])) {
-      lerToken(tokenList);
+      lerToken();
       
-      simpleCommandAnalysis(tokenList);
+      simpleCommandAnalysis();
     }
   }
 }
 
-function whileAnalysis(tokenList) {
-  lerToken(tokenList);
+function whileAnalysis() {
+  lerToken();
 
-  expressionAnalysis(tokenList);
+  expressionAnalysis();
 
   if (!SyntacticValidation.doValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado um fator, porem encontrado ${tokenList[index].lexeme}`);
 
-  lerToken(tokenList);
+  lerToken();
   
-  simpleCommandAnalysis(tokenList);
+  simpleCommandAnalysis();
 }
 
-function readAnalysis(tokenList) {
-  lerToken(tokenList);
+function readAnalysis() {
+  lerToken();
 
   if (!SyntacticValidation.openBracketValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado abre parênteses, porem encontrado ${tokenList[index].lexeme}`);
   
-  lerToken(tokenList);
+  lerToken();
   
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
   
-  lerToken(tokenList);
+  lerToken();
 
   if (!SyntacticValidation.closeBracketValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`);
   
-  lerToken(tokenList);
+  lerToken();
 }
 
-function writeAnalysis(tokenList) {
-  lerToken(tokenList);
+function writeAnalysis() {
+  lerToken();
 
   if (!SyntacticValidation.openBracketValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado abre parênteses, porem encontrado ${tokenList[index].lexeme}`);
 
-  lerToken(tokenList);
+  lerToken();
 
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-  lerToken(tokenList);
+  lerToken();
 
   if (!SyntacticValidation.closeBracketValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`);
 
-  lerToken(tokenList);
+  lerToken();
 }
 
-function simpleCommandAnalysis(tokenList) {
-  if (SyntacticValidation.identifierValidation(tokenList[index])) assignmentOrProcedureAnalysis(tokenList);
+function simpleCommandAnalysis() {
+  if (SyntacticValidation.identifierValidation(tokenList[index])) assignmentOrProcedureAnalysis();
 
-  else if (SyntacticValidation.ifValidation(tokenList[index])) ifAnalysis(tokenList);
+  else if (SyntacticValidation.ifValidation(tokenList[index])) ifAnalysis();
 
-  else if (SyntacticValidation.whileValidation(tokenList[index])) whileAnalysis(tokenList);
+  else if (SyntacticValidation.whileValidation(tokenList[index])) whileAnalysis();
 
-  else if (SyntacticValidation.readValidation(tokenList[index])) readAnalysis(tokenList);
+  else if (SyntacticValidation.readValidation(tokenList[index])) readAnalysis();
 
-  else if (SyntacticValidation.writeValidation(tokenList[index])) writeAnalysis(tokenList);
+  else if (SyntacticValidation.writeValidation(tokenList[index])) writeAnalysis();
 
-  else commandAnalysis(tokenList);
+  else commandAnalysis();
 }
 
-function commandAnalysis(tokenList) {
+function commandAnalysis() {
   if (!SyntacticValidation.initValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado inicio, porem encontrado ${tokenList[index].lexeme}`);
 
-  lerToken(tokenList);
+  lerToken();
 
-  simpleCommandAnalysis(tokenList);
+  simpleCommandAnalysis();
 
   while (!SyntacticValidation.endValidation(tokenList[index])) {
     if (!SyntacticValidation.semicolonValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`);
     
-    lerToken(tokenList);
-    if (!SyntacticValidation.endValidation(tokenList[index])) simpleCommandAnalysis(tokenList);
+    lerToken();
+    if (!SyntacticValidation.endValidation(tokenList[index])) simpleCommandAnalysis();
   }
 
-  lerToken(tokenList);
+  lerToken();
 }
 
-function blockAnalisys(tokenList) {
-  lerToken(tokenList);
+function blockAnalisys() {
+  lerToken();
 
-  etVarAnalysis(tokenList);
+  etVarAnalysis();
 
-  subroutineAnalysis(tokenList);
+  subroutineAnalysis();
 
-  commandAnalysis(tokenList);
+  commandAnalysis();
 }
 
-export function initSyntacticalAnalisys(tokenList) {
+export function initSyntacticalAnalisys(lexicalTokenList) {
+  tokenList = lexicalTokenList;
   line = tokenList[index].line;
-  if (!SyntacticValidation.initialValidation(tokenList[index])) throw new Error(`Erro - Linha ${line}: Esperado comando ínicio, porem encontrado comando ${tokenList[index].lexeme}`);
+  if (!SyntacticValidation.initialValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado comando ínicio, porem encontrado comando ${tokenList[index].lexeme}`);
 
-  lerToken(tokenList);
+  lerToken();
 
-  if (!SyntacticValidation.identifierValidation(tokenList[index])) throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
+  if (!SyntacticValidation.identifierValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
+
   SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.PROGRAM)
   
-  lerToken(tokenList);
+  lerToken();
 
-  if (!SyntacticValidation.semicolonValidation(tokenList[index])) throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado  ${tokenList[index].lexeme}`);
+  if (!SyntacticValidation.semicolonValidation(tokenList[index]))
+    throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado  ${tokenList[index].lexeme}`);
 
-  blockAnalisys(tokenList);
+  blockAnalisys();
 
   if (SyntacticValidation.pointValidation(tokenList[index])) {
     if (index !== tokenList.length - 1) throw new Error(`Erro - Linha ${line}: Tokens existentes após o ponto`);
