@@ -45,8 +45,11 @@ export const increaseLevel = () => {
 
 export const decreaseLevel = () => {
   console.log('antes da diminuição de nível', symbolTable);
-  const filteredSymbolTable = symbolTable.filter((item) => item.tokenLevel !== level
-    || (item.tokenLevel === level && (item.tokenFunc === TokenType.BOOLEAN_FUNCTION || item.tokenFunc === TokenType.INTEGER_FUNCTION)));
+  const filteredSymbolTable = symbolTable.filter((item) => item.tokenLevel < level || (item.tokenLevel === level
+    && (item.tokenFunc === TokenType.BOOLEAN_FUNCTION
+      || item.tokenFunc === TokenType.INTEGER_FUNCTION
+      || item.tokenFunc === TokenType.PROCEDURE
+      || item.tokenFunc === TokenType.PROGRAM)));
   symbolTable = filteredSymbolTable;
   console.log('depois da diminuição de nível', symbolTable);
 
@@ -58,28 +61,41 @@ export const decreaseLevel = () => {
 
 // pesquisa_duplic_var_tabela
 export const searchDuplicateVariable = (token) => {
-  console.log(symbolTable, token);
   const alreadyDeclared = symbolTable.find((item) => item.token === token
     && ((item.tokenFunc === TokenType.VARIABLE && item.tokenLevel === level)
       || item.tokenFunc === TokenType.BOOLEAN_FUNCTION
       || item.tokenFunc === TokenType.INTEGER_FUNCTION
       || item.tokenFunc === TokenType.PROCEDURE
       || item.tokenFunc === TokenType.PROGRAM))
-  console.log(alreadyDeclared);
+  return alreadyDeclared ? true : false;
+}
+
+export const searchDuplicateFunctionOrProcedure = (token) => {
+  const alreadyDeclared = symbolTable.find((item) => item.token === token)
   return alreadyDeclared ? true : false;
 }
 
 // pesquisa_declvarfunc_tabela
 export const searchDeclarationVariableFunction = (token) => {
-  const found = symbolTable.find((item) => item.token === token && item.tokenLevel === level
-    && (item.tokenFunc === TokenType.BOOLEAN_FUNCTION || item.tokenFunc === TokenType.INTEGER_FUNCTION
+  const found = symbolTable.find((item) => item.token === token
+    && (item.tokenFunc === TokenType.BOOLEAN_FUNCTION
+    || item.tokenFunc === TokenType.INTEGER_FUNCTION
     || item.tokenFunc === TokenType.VARIABLE))
   return found ? true : false;
 }
 
+// pesquisa_declvarproc_tabela
+export const searchDeclarationVariableProcedure = (token) => {
+  const found = symbolTable.find((item) => item.token === token
+    && (item.tokenFunc === TokenType.PROCEDURE
+      || item.tokenFunc === TokenType.VARIABLE))
+  return found ? true : false;
+}
+
 // pesquisa_declvar_tabela
-export const searchDeclarationScopeVariable = (token) => { 
-  const found = symbolTable.find((item) => item.token === token && item.tokenLevel === level)
+export const searchDeclarationVariable = (token) => { 
+  const found = symbolTable.find((item) => item.token === token && item.tokenFunc === TokenType.VARIABLE)
+  // const found = symbolTable.find((item) => item.token === token && item.tokenLevel === level)
   return found ? true : false;
 }
 
@@ -99,14 +115,18 @@ export const searchDeclarationFunction = (token) => {
 export const changeFunctionType = (type) => {
   let aux = [];
 
-  console.log('antes de mudar a função', symbolTable);
   symbolTable.forEach((item) => {
     if (item.tokenFunc === TokenType.FUNCTION) {
-      aux = [...aux, { ...item, tokenType: type }]
+      aux = [...aux, { ...item, tokenFunc: type }]
     } else {
       aux = [...aux, item]
     }
   })
   symbolTable = aux;
-  console.log('depois de mudar a função', symbolTable);
+}
+
+// pesquisa_tabela
+export const searchTable = (token) => {
+  const found = symbolTable.find((item) => item.token === token)
+  return found;
 }

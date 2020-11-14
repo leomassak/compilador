@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 
 import './styles.scss';
 import { pegaToken } from '../../functions/pegaToken';
-import * as SyntacticValidation from '../../syntactical/validations';
 import * as SyntacticAnalysis from '../../syntactical/analisys';
 import * as SymbolTable from '../../symbolTable';
 

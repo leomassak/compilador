@@ -17,11 +17,11 @@ function lerToken() {
   line = tokenList[index].line;
 }
 
-function typeAnalysis() {
+function typeAnalysis() { 
   if (!SyntacticValidation.integerValidation(tokenList[index]) && !SyntacticValidation.booleanValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado inteiro ou booleano, porem encontrado ${tokenList[index].lexeme}`);
 
-  // SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme);
+  SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme);
   lerToken();
 }
 
@@ -30,10 +30,10 @@ function varAnalysis() {
     if (!SyntacticValidation.identifierValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado um identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-    // const isDuplicate = SymbolTable.searchDuplicateVariable(tokenList[index].lexeme)
-    // if (isDuplicate) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
+    const isDuplicate = SymbolTable.searchDuplicateVariable(tokenList[index].lexeme)
+    if (isDuplicate) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
 
-    // SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.VARIABLE);
+    SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.VARIABLE);
     lerToken();
 
     if (!SyntacticValidation.commaValidation(tokenList[index]) && !SyntacticValidation.doublePointValidation(tokenList[index]))
@@ -73,15 +73,15 @@ function etVarAnalysis() {
 function subroutineDeclarationAnalysis() {
   lerToken();
 
-  // SymbolTable.increaseLevel();
+  SymbolTable.increaseLevel();
 
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-  // const found = SymbolTable.searchDeclarationProcedure(tokenList[index].lexeme);
-  // if (found) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
+  const found = SymbolTable.searchDuplicateFunctionOrProcedure(tokenList[index].lexeme);
+  if (found) throw new Error(`Erro - Linha ${line}: O nome do procedimento "${tokenList[index].lexeme}" já foi declarado!`);
 
-  // SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.PROCEDURE)
+  SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.PROCEDURE)
 
   lerToken();
 
@@ -90,22 +90,21 @@ function subroutineDeclarationAnalysis() {
 
   blockAnalisys();
 
-  // SymbolTable.decreaseLevel();
+  SymbolTable.decreaseLevel();
 }
 
 function functionDeclarationAnalysis() {
   lerToken();
 
-  // SymbolTable.increaseLevel();
+  SymbolTable.increaseLevel();
 
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-  // const found = SymbolTable.searchDeclarationFunction(tokenList[index].lexeme);
-  // if (found) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
+  const found = SymbolTable.searchDuplicateFunctionOrProcedure(tokenList[index].lexeme);
+  if (found) throw new Error(`Erro - Linha ${line}: O nome da função "${tokenList[index].lexeme}" já foi declarado!`);
 
-  // console.log('inserindo na tabela', tokenList[index].lexeme, SymbolTable.TokenType.FUNCTION)
-  // SymbolTable.insertTypeInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.FUNCTION)
+  SymbolTable.insertInSymbolTable(tokenList[index].lexeme, SymbolTable.TokenType.FUNCTION)
 
   lerToken();
 
@@ -117,17 +116,17 @@ function functionDeclarationAnalysis() {
   if (!SyntacticValidation.booleanValidation(tokenList[index]) && !SyntacticValidation.integerValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado booleano ou inteiro, porem encontrado ${tokenList[index].lexeme}`);
 
-  // if (SyntacticValidation.booleanValidation(tokenList[index])) {
-  //     SymbolTable.changeFunctionType(SymbolTable.TokenType.BOOLEAN_FUNCTION);
-  // } else {
-  //     SymbolTable.changeFunctionType(SymbolTable.TokenType.INTEGER_FUNCTION);
-  // }
+  if (SyntacticValidation.booleanValidation(tokenList[index])) {
+      SymbolTable.changeFunctionType(SymbolTable.TokenType.BOOLEAN_FUNCTION);
+  } else {
+      SymbolTable.changeFunctionType(SymbolTable.TokenType.INTEGER_FUNCTION);
+  }
 
   lerToken();
 
   if (SyntacticValidation.semicolonValidation(tokenList[index])) blockAnalisys();
 
-  // SymbolTable.decreaseLevel();
+  SymbolTable.decreaseLevel();
 }
 
 function subroutineAnalysis() {
@@ -174,7 +173,7 @@ function simpleExpressionAnalysis() {
   }
 }
 
-export function procedureAnalysis() { }
+export function procedureAnalysis() {}
 
 export function functionCallAnalisys() {
   lerToken();
@@ -188,7 +187,17 @@ export function assignmentAnalysis() {
 
 
 export function factorAnalisys() {
-  if (SyntacticValidation.identifierValidation(tokenList[index])) functionCallAnalisys();
+  if (SyntacticValidation.identifierValidation(tokenList[index])) {
+    const identifierFound = SymbolTable.searchTable(tokenList[index].lexeme);
+
+    if (!identifierFound || (identifierFound.tokenFunc !== SymbolTable.TokenType.VARIABLE
+      && identifierFound.tokenFunc !== SymbolTable.TokenType.BOOLEAN_FUNCTION
+      && identifierFound.tokenFunc !== SymbolTable.TokenType.INTEGER_FUNCTION))
+      throw new Error(`Erro - Linha ${line}: O fator "${tokenList[index].lexeme}" não foi declarado`);
+
+    if (identifierFound.tokenFunc === SymbolTable.TokenType.VARIABLE) lerToken();
+    else functionCallAnalisys();
+  }
   
   else if (SyntacticValidation.numberValidation(tokenList[index])) lerToken();
 
@@ -270,7 +279,10 @@ function readAnalysis() {
   
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
-  
+
+  if (!SymbolTable.searchDeclarationVariable(tokenList[index].lexeme))
+    throw new Error(`Erro - Linha ${line}: Não foi encontrado nenhuma variável "${tokenList[index].lexeme}"`);
+
   lerToken();
 
   if (!SyntacticValidation.closeBracketValidation(tokenList[index]))
@@ -289,6 +301,9 @@ function writeAnalysis() {
 
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
+  
+  if (!SymbolTable.searchDeclarationVariableFunction(tokenList[index].lexeme))
+    throw new Error(`Erro - Linha ${line}: Não foi encontrado nenhuma variável ou função com nome "${tokenList[index].lexeme}"`);
 
   lerToken();
 
@@ -299,7 +314,12 @@ function writeAnalysis() {
 }
 
 function simpleCommandAnalysis() {
-  if (SyntacticValidation.identifierValidation(tokenList[index])) assignmentOrProcedureAnalysis();
+  if (SyntacticValidation.identifierValidation(tokenList[index])) {
+    if (!SymbolTable.searchDeclarationVariableProcedure(tokenList[index].lexeme))
+      throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" não foi declarado`);
+
+    assignmentOrProcedureAnalysis();
+  }
 
   else if (SyntacticValidation.ifValidation(tokenList[index])) ifAnalysis();
 
