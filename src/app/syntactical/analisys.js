@@ -4,65 +4,6 @@ import * as SymbolTable from '../symbolTable';
 export let index = 0;
 export let line = 0;
 export let tokenList = [];
-export let posFixExpression = [];
-export let posFixPile = [];
-export let posFixLevel = 0;
-
-const posFixPrecedence = [
-  { lexeme: '-u', order: 7, read: 1, type: 'inteiro' },  
-  { lexeme: '+u', order: 7, read: 1, type: 'inteiro' }, 
-  { lexeme: 'nao', order: 7, read: 1, type: 'booleano' },
-  { lexeme: '*', order: 6, read: 2, type: 'inteiro' },   
-  { lexeme: 'div', order: 6, read: 2, type: 'inteiro' },
-  { lexeme: '-', order: 5, read: 2, type: 'inteiro' },
-  { lexeme: '+', order: 5, read: 2, type: 'inteiro' },
-  { lexeme: '>', order: 4, read: 2, type: 'inteiro' },
-  { lexeme: '>=', order: 4, read: 2, type: 'inteiro' },
-  { lexeme: '<', order: 4, read: 2, type: 'inteiro' },
-  { lexeme: '<=', order: 4, read: 2, type: 'inteiro' },
-  { lexeme: '=', order: 3, read: 2, type: 'ambos' },
-  { lexeme: '!=', order: 3, read: 2, type: 'ambos' },
-  { lexeme: 'e', order: 2, read: 2, type: 'booleano' },
-  { lexeme: 'ou', order: 1, read: 2, type: 'booleano' },
-];
-
-function verifyPrecedence(newToken) {
-  if (posFixPile.length === 0 && tokenList[index].lexeme !== '(' && tokenList[index].lexeme !== ')') {
-    posFixPile.push(newToken || tokenList[index].lexeme)
-  }
-  else if (tokenList[index].lexeme === '(') {
-    posFixPile.push(tokenList[index].lexeme);
-  }
-  else if (tokenList[index].lexeme === ')') {
-    let shouldSkip = false;
-    let newPosFixPile = [];
-    posFixPile.slice().reverse().forEach((item) => {
-      if (item === '(') shouldSkip = true;
-      else if (!shouldSkip) posFixExpression.push(item);
-      else newPosFixPile.push(item);
-    });
-    posFixPile = newPosFixPile.reverse();
-  } else {
-    const actualTokenOrder = (posFixPile[posFixPile.length - 1] === '(' || posFixPile[posFixPile.length - 1] === ')')
-      ? 0 : posFixPrecedence.find((item) => item.lexeme === posFixPile[posFixPile.length - 1]).order;
-    const newTokenOrder = posFixPrecedence.find((item) => item.lexeme === (newToken || tokenList[index].lexeme)).order
-    if (actualTokenOrder < newTokenOrder) posFixPile.push(newToken || tokenList[index].lexeme)
-    else {
-      posFixPile.slice().reverse().forEach((item) => posFixExpression.push(item));
-      posFixPile = [newToken || tokenList[index].lexeme];
-    }
-  }
-}
-
-function posFixAnalisys() {
-  console.log('analise da posfix')
-  console.log('expressão posfix:', posFixExpression);
-  console.log('pilha posfix:', posFixPile);
-
-  posFixPile = [];
-  posFixExpression = [];
-  console.log('saiu da analise da posfix')
-}
 
 export const reset = () => {
   index = 0;
@@ -210,26 +151,26 @@ function expressionAnalysis() {
       || SyntacticValidation.lowerEqualValidation(tokenList[index])
       || SyntacticValidation.diffValidation(tokenList[index])) {
 
-    verifyPrecedence(); 
+    SymbolTable.verifyPrecedence(); 
 
     lerToken();
      
     simpleExpressionAnalysis();
   }
 
-  if (posFixLevel === 0) {
-    posFixPile.slice().reverse().forEach((item) => posFixExpression.push(item));
+  if (SymbolTable.posFixLevel === 0) {
+    SymbolTable.posFixStack.slice().reverse().forEach((item) => SymbolTable.posFixExpression.push(item));
 
-    posFixAnalisys();
-  } else posFixLevel -= 1;
+    SymbolTable.posFixAnalisys();
+  } else SymbolTable.changePosFix(SymbolTable.posFixLevel - 1);
 }
 
 function simpleExpressionAnalysis() {
   if (SyntacticValidation.plusValidation(tokenList[index])
     || SyntacticValidation.minusValidation(tokenList[index])) {
     
-    if (SyntacticValidation.plusValidation(tokenList[index])) verifyPrecedence('+u');
-    else verifyPrecedence('-u');
+    if (SyntacticValidation.plusValidation(tokenList[index])) SymbolTable.verifyPrecedence({ symbol: 'smais_unario', lexeme: '+u', line });
+    else SymbolTable.verifyPrecedence({ symbol: 'smenos_unario', lexeme: '-u', line });
     lerToken();
   }
   
@@ -239,7 +180,7 @@ function simpleExpressionAnalysis() {
       || SyntacticValidation.minusValidation(tokenList[index])
       || SyntacticValidation.orValidation(tokenList[index])) {
 
-    verifyPrecedence();
+    SymbolTable.verifyPrecedence();
     
     lerToken();
 
@@ -257,45 +198,45 @@ export function factorAnalisys() {
       throw new Error(`Erro - Linha ${line}: O fator "${tokenList[index].lexeme}" não foi declarado`);
 
     if (identifierFound.tokenFunc === SymbolTable.TokenType.VARIABLE) {
-      posFixExpression.push(tokenList[index].lexeme);
+      SymbolTable.posFixExpression.push(tokenList[index]);
 
       lerToken();
     }
     else {
-      posFixExpression.push(tokenList[index].lexeme);
+      SymbolTable.posFixExpression.push(tokenList[index]);
 
       functionCallAnalisys();
     }
   }
 
   else if (SyntacticValidation.numberValidation(tokenList[index])) {
-    posFixExpression.push(tokenList[index].lexeme);
+    SymbolTable.posFixExpression.push(tokenList[index]);
 
     lerToken();
   }
 
   else if (SyntacticValidation.notValidation(tokenList[index])) {
-    verifyPrecedence();
+    SymbolTable.verifyPrecedence();
 
     lerToken();
 
     factorAnalisys();
   } else if (SyntacticValidation.openBracketValidation(tokenList[index])) {
-    verifyPrecedence();
+    SymbolTable.verifyPrecedence();
 
     lerToken();
 
-    posFixLevel += 1;
+    SymbolTable.changePosFix(SymbolTable.posFixLevel + 1);
     expressionAnalysis();
 
     if (!SyntacticValidation.closeBracketValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`);
 
-    verifyPrecedence();
+    SymbolTable.verifyPrecedence();
 
     lerToken();
   } else if (SyntacticValidation.trueValidation(tokenList[index]) || SyntacticValidation.falseValidation(tokenList[index])) {
-    posFixExpression.push(tokenList[index].lexeme);
+    SymbolTable.posFixExpression.push(tokenList[index]);
 
     lerToken();
   } else throw new Error(`Erro - Linha ${line}: Esperado um fator, porem encontrado ${tokenList[index].lexeme}`);
@@ -307,7 +248,7 @@ export function termAnalisys() {
   while (SyntacticValidation.multValidation(tokenList[index])
     || SyntacticValidation.divValidation(tokenList[index])
     || SyntacticValidation.andValidation(tokenList[index])) {
-    verifyPrecedence();
+    SymbolTable.verifyPrecedence();
 
     lerToken();
 
