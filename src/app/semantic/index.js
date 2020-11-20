@@ -163,8 +163,15 @@ export function changePosFix(value) {
   posFixLevel = value;
 }
 
+export function resetPosFix() {
+  posFixExpression = [];
+  posFixStack = [];
+  posFixLevel = 0;
+}
+
 export function verifyPrecedence(newToken) {
   const index = SyntacticalAnalysis.index;
+
   if (posFixStack.length === 0 && SyntacticalAnalysis.tokenList[index].lexeme !== '(' && SyntacticalAnalysis.tokenList[index].lexeme !== ')') {
     posFixStack.push(newToken || SyntacticalAnalysis.tokenList[index])
   }
@@ -186,7 +193,9 @@ export function verifyPrecedence(newToken) {
     const newTokenOrder = posFixPrecedence.find((item) => item.lexeme === ((newToken && newToken.lexeme) || SyntacticalAnalysis.tokenList[index].lexeme)).order
     if (actualTokenOrder < newTokenOrder) posFixStack.push(newToken || SyntacticalAnalysis.tokenList[index])
     else {
-      posFixStack.slice().reverse().forEach((item) => posFixExpression.push(item));
+      posFixStack.slice().reverse().forEach((item) => {
+        if (item.lexeme !== '(' && item.lexeme !== ')') posFixExpression.push(item)
+      });
       posFixStack = [newToken || SyntacticalAnalysis.tokenList[index]];
     }
   }
@@ -194,7 +203,7 @@ export function verifyPrecedence(newToken) {
 
 export function posFixAnalisys() {
   console.log('analise da posfix')
-  // console.log('ANTES: expressão posfix:', JSON.stringify(posFixExpression));
+  console.log('ANTES: expressão posfix:', JSON.stringify(posFixExpression));
   let hasOperations = true;
   let index = 0;
   do {
@@ -212,31 +221,36 @@ export function posFixAnalisys() {
     else index += 1;
   } while (hasOperations);
 
-  // console.log('DEPOIS: expressão posfix:', JSON.stringify(posFixExpression));
-  posFixStack = [];
-  posFixExpression = [];
+  if (posFixExpression.length > 1)
+    throw new Error(`Erro - Linha ${SyntacticalAnalysis.line}: Está faltando um operador na expressão`);
+
+  if (posFixExpression[0].symbol === 'snumero') posFixExpression = 'inteiro';
+  else if (posFixExpression[0].symbol === 'sbooleano') posFixExpression = 'inteiro';
+  else posFixExpression = posFixExpression[0].lexeme;
+
+  console.log('DEPOIS: expressão posfix:', JSON.stringify(posFixExpression));
   console.log('saiu da analise da posfix')
 }
 
 function unaryOperationAnalysis(unaryOperation, token, index) {
   if (unaryOperation.type === 'inteiro') {
-    if (!checkInteger(token)) throw new Error(`Erro - Linha ${token.line}: O token "${token.lexeme}" não representa um valor inteiro`);
+    if (!checkInteger(token)) throw new Error(`Erro - Linha ${token.line}: A operação "${unaryOperation.lexeme}" não pode ser feita com um valor booleano`);
     transformExpressionArray(unaryOperation, unaryOperation.return, index)
   } else {
-    if (!checkBoolean(token)) throw new Error(`Erro - Linha ${token.line}: O token "${token.lexeme}" não representa um valor booleano`);
+    if (!checkBoolean(token)) throw new Error(`Erro - Linha ${token.line}: A operação "${unaryOperation.lexeme}" não pode ser feita com um valor inteiro`);
     transformExpressionArray(unaryOperation, unaryOperation.return, index)
   }
 }
 
 function operationAnalysis(operation, firsToken, secondToken, index) {
   if (operation.type === 'inteiro') {
-    if (!checkInteger(firsToken)) throw new Error(`Erro - Linha ${firsToken.line}: O token "${firsToken.lexeme}" não representa um valor inteiro`);
-    if (!checkInteger(secondToken)) throw new Error(`Erro - Linha ${secondToken.line}: O token "${secondToken.lexeme}" não representa um valor inteiro`);
+    if (!checkInteger(firsToken)) throw new Error(`Erro - Linha ${firsToken.line}: A operação "${operation.lexeme}" não pode ser feita com um valor booleano`);
+    if (!checkInteger(secondToken)) throw new Error(`Erro - Linha ${secondToken.line}: A operação "${operation.lexeme}" não pode ser feita com um valor booleano`);
 
     transformExpressionArray(operation, operation.return, index)
   } else if (operation.type === 'booleano') {
-    if (!checkBoolean(firsToken)) throw new Error(`Erro - Linha ${firsToken.line}: O token "${firsToken.lexeme}" não representa um valor booleano`);
-    if (!checkBoolean(secondToken)) throw new Error(`Erro - Linha ${secondToken.line}: O token "${secondToken.lexeme}" não representa um valor booleano`);
+    if (!checkBoolean(firsToken)) throw new Error(`Erro - Linha ${firsToken.line}: A operação "${operation.lexeme}" não pode ser feita com um valor inteiro`);
+    if (!checkBoolean(secondToken)) throw new Error(`Erro - Linha ${secondToken.line}: A operação "${operation.lexeme}" não pode ser feita com um valor inteiro`);
 
     transformExpressionArray(operation, operation.return, index)
   } else {

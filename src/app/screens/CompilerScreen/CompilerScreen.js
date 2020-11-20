@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import './styles.scss';
 import { pegaToken } from '../../functions/pegaToken';
 import * as SyntacticAnalysis from '../../syntactical/analisys';
-import * as SymbolTable from '../../symbolTable';
+import * as SemanticAnalysis from '../../semantic';
 
 function CompilerScreen() {
   const [tokenList, setTokenList] = useState([]);
@@ -134,8 +134,10 @@ function CompilerScreen() {
     setSyntacticErrorIndex(-1);
     setSyntacticError('');
     setSuccess(false);
-    SymbolTable.resetSymbolTable();
+    SemanticAnalysis.resetSymbolTable();
+    SemanticAnalysis.resetPosFix();
     SyntacticAnalysis.reset();
+    console.clear();
   }
 
   return (
