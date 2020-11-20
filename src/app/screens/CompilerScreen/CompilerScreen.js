@@ -1,8 +1,16 @@
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Controlled as CodeMirror } from 'react-codemirror2';
+
+import 'codemirror/lib/codemirror.css';
+import 'codemirror/theme/material.css';
+import 'codemirror/theme/dracula.css';
+
+import 'codemirror/mode/markdown/markdown';
 
 import './styles.scss';
+
 import { pegaToken } from '../../functions/pegaToken';
 import * as SyntacticAnalysis from '../../syntactical/analisys';
 import * as SymbolTable from '../../symbolTable';
@@ -13,6 +21,11 @@ function CompilerScreen() {
   const [syntacticErrorIndex, setSyntacticErrorIndex] = useState(-1);
   const [syntacticError, setSyntacticError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [lpd, setLpd] = useState('');
+  const [editorId, setEditorId] = useState('');
+  const [consoleData, setConsoleData] = useState('');
+  const [running, setRunning] = useState(false);
+
 
   const ESPECIAL_COMMANDS = {
     SKIP_LINE: '\n',
@@ -28,6 +41,34 @@ function CompilerScreen() {
     SLASH: 1,
     KEY: 2,
   };
+
+  const codeMirrorOptions = {
+    theme: 'dracula',
+    lineNumbers: true,
+    scrollbarStyle: null,
+    lineWrapping: true,
+  };
+
+  async function runCode() {
+    if(lpd.length > 0) {
+      const list = await lexicalAnalysis(lpd);
+      await syntacticAnalysis(list); 
+      setTokenList(list);
+      setDisplayList(true);
+      setRunning(true);
+    }
+  }
+
+  function stopRun() {
+    setTokenList([]);
+    setDisplayList(false)
+    setSyntacticErrorIndex(-1);
+    setSyntacticError('');
+    setSuccess(false);
+    setRunning(false);
+    SymbolTable.resetSymbolTable();
+    SyntacticAnalysis.reset();
+  }
 
   function lexicalAnalysis(file) {
     let line = 1;
@@ -120,10 +161,7 @@ function CompilerScreen() {
       reader.onload = async (e) => {
         handleFileRemove();
         const file = e.target.result;
-        const list = await lexicalAnalysis(file);
-        await syntacticAnalysis(list);
-        setTokenList(list);
-        setDisplayList(true);
+        setLpd(file);
       };
     } else alert('Este tipo de arquivo não é suportado!');
   }
@@ -134,79 +172,78 @@ function CompilerScreen() {
     setSyntacticErrorIndex(-1);
     setSyntacticError('');
     setSuccess(false);
+    setRunning(false);
+    setLpd('');
     SymbolTable.resetSymbolTable();
     SyntacticAnalysis.reset();
   }
 
   return (
-    <div className="panel">
-      <div className="header-panel">
-        <ul>
-          <li>
-            <input
-              type="file"
-              name="Arquivo"
-              id="file-button"
-              onChange={handleFileSelector}
-            />
-            <label htmlFor="file-button">Inserir Arquivo</label>
-          </li>
-          <li>
-            <button
-              type="button"
-              onClick={handleFileRemove}
-            >
-              Limpar
-            </button>
-          </li>
-        </ul>
-      </div>
-      <div className="main-panel">
-        {displayList && tokenList.map((item, index) => (
-          <>
-            {(syntacticErrorIndex === -1 || index < syntacticErrorIndex) && (
-              <>
-                {item.symbol === 'Erro' && (
-                  <>
-                    <p className="panel-error-text-lines">
-                      {`Linha -> ${item.line}`}
-                    </p>
-                    <p className="panel-error-text-lines">
-                      {`Erro -> ${item.lexeme}`}
-                      <br />
-                    </p>
-                  </>
-                )}
-                {item.symbol !== 'Erro' && (
-                  <>
-                    <p className="panel-text-lines">
-                      {`Linha -> ${item.line}`}
-                    </p>
-                    <p className="panel-text-lines">
-                      {`Símbolo -> ${item.symbol}`}
-                    </p>
-                    <p className="panel-text-lines">
-                      {`Lexema -> ${item.lexeme}`}
-                    </p>
-                    <br />
-                  </>
-                )}
-              </>
-            )}
-          </>
-        ))}
-        {syntacticErrorIndex >= 0 && (
-          <p className="panel-error-text-lines">
-            {syntacticError}
-          </p>
-        )}
-        {success && (
-          <p className="panel-success-text-lines">
-            Compilado com sucesso!
-          </p>
+    <>
+    <nav>
+         <div className="header-panel">
+           <ul>
+             <li>
+               <input
+                type="file"
+                name="Arquivo"
+                id="file-button"
+                onChange={handleFileSelector}
+              />
+              <label htmlFor="file-button">Inserir Arquivo</label>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={handleFileRemove}
+              >
+                Limpar
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={runCode}
+              >
+                Compilar
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={stopRun}
+              >
+                Interromper
+              </button>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    <div id="container">
+    <div id="code">
+        <section id="lpdmixed">
+          <CodeMirror
+            value={lpd}
+            options={{
+              mode: 'markdown',
+              readOnly: running,
+              ...codeMirrorOptions,
+            }}
+            onBeforeChange={(editor, data, code) => {
+              setLpd(code);
+            }}
+          />
+        </section>
+        {running && (
+          <section id="console">
+          <div className="console-container">
+            <textarea value={syntacticError} readOnly />
+          </div>
+       </section>
         )}
       </div>
     </div>
+    </>
   );
 }
 
