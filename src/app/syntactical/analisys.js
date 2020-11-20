@@ -276,20 +276,24 @@ export function assignmentAnalysis() {
   expressionAnalysis();
 
   if (isFunction) {
+    console.log('isFunction', !SemanticAnalisys.checkFunctionReturn(isFunction.lexeme))
+    if (!SemanticAnalisys.checkFunctionReturn(isFunction.lexeme))
+      throw new Error(`Erro - Linha ${line}: O retorno da função ${isFunction.lexeme} está declarado em lugar errado`);
+
     if (isFunction.tokenFunc === SemanticAnalisys.TokenType.BOOLEAN_FUNCTION) {
       if (SemanticAnalisys.posFixExpression === 'inteiro')
-        throw new Error(`Erro - Linha ${line}: A função do tipo booleana não pode retornar um valor inteiro`);
+        throw new Error(`Erro - Linha ${line}: O retorno da função ${isFunction.lexeme} não pode ser um valor inteiro`);
     } else {
       if (SemanticAnalisys.posFixExpression === 'booleano')
-        throw new Error(`Erro - Linha ${line}: A função do tipo inteiro não pode retornar um valor booleano`);
+        throw new Error(`Erro - Linha ${line}: O retorno da função ${isFunction.lexeme} não pode ser um valor booleano`);
     }
   } else if (isVariable) {
     if (isVariable.tokenType === 'booleano') {
       if (SemanticAnalisys.posFixExpression === 'inteiro')
-        throw new Error(`Erro - Linha ${line}: A variável do tipo booleana não pode receber um valor inteiro`);
+        throw new Error(`Erro - Linha ${line}: A variável ${isVariable.lexeme} não pode receber um valor inteiro`);
     } else {
       if (SemanticAnalisys.posFixExpression === 'booleano')
-        throw new Error(`Erro - Linha ${line}: A variável do tipo inteiro não pode receber um valor booleano`);
+        throw new Error(`Erro - Linha ${line}: A variável ${isVariable.lexeme} não pode receber um valor booleano`);
     }
   } else throw new Error(`Erro - Linha ${line}: O identificador que está recebendo a atribuição não é nem uma função nem uma variável`);
   
@@ -307,7 +311,7 @@ function ifAnalysis() {
   lerToken();
   
   expressionAnalysis();
-  console.log(SemanticAnalisys.posFixExpression);
+  console.log('CONDIÇÃO DO IF É:', SemanticAnalisys.posFixExpression);
   if (SemanticAnalisys.posFixExpression !== 'booleano')
     throw new Error(`Erro - Linha ${line}: Condição do comando "se" não pode ser do tipo inteiro`);
 

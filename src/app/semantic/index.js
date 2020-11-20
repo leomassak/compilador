@@ -138,6 +138,13 @@ export const searchDeclarationFunction = (token) => {
   return found;
 }
 
+export const checkFunctionReturn = (token) => {
+  const found = symbolTable.find((item) => item.tokenFunc === TokenType.BOOLEAN_FUNCTION
+    || item.tokenFunc === TokenType.INTEGER_FUNCTION);
+  
+  return found && found.lexeme === token;
+}
+
 export const changeFunctionType = (type) => {
   let aux = [];
 
@@ -202,8 +209,8 @@ export function verifyPrecedence(newToken) {
 }
 
 export function posFixAnalisys() {
-  console.log('analise da posfix')
-  console.log('ANTES: expressão posfix:', JSON.stringify(posFixExpression));
+  // console.log('analise da posfix')
+  // console.log('ANTES: expressão posfix:', JSON.stringify(posFixExpression));
   let hasOperations = true;
   let index = 0;
   do {
@@ -225,11 +232,11 @@ export function posFixAnalisys() {
     throw new Error(`Erro - Linha ${SyntacticalAnalysis.line}: Está faltando um operador na expressão`);
 
   if (posFixExpression[0].symbol === 'snumero') posFixExpression = 'inteiro';
-  else if (posFixExpression[0].symbol === 'sbooleano') posFixExpression = 'inteiro';
+  else if (posFixExpression[0].symbol === 'sbooleano') posFixExpression = 'booleano';
   else posFixExpression = posFixExpression[0].lexeme;
 
-  console.log('DEPOIS: expressão posfix:', JSON.stringify(posFixExpression));
-  console.log('saiu da analise da posfix')
+  // console.log('DEPOIS: expressão posfix:', JSON.stringify(posFixExpression));
+  // console.log('saiu da analise da posfix')
 }
 
 function unaryOperationAnalysis(unaryOperation, token, index) {
