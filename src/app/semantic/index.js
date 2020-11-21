@@ -135,14 +135,14 @@ export const searchDeclarationProcedure = (token) => {
 export const searchDeclarationFunction = (token) => {
   const found = symbolTable.find((item) => item.token === token
     && (item.tokenFunc === TokenType.BOOLEAN_FUNCTION || item.tokenFunc === TokenType.INTEGER_FUNCTION))
+
   return found;
 }
 
 export const checkFunctionReturn = (token) => {
-  const found = symbolTable.find((item) => item.tokenFunc === TokenType.BOOLEAN_FUNCTION
+  const found = symbolTable.slice().reverse().find((item) => item.tokenFunc === TokenType.BOOLEAN_FUNCTION
     || item.tokenFunc === TokenType.INTEGER_FUNCTION);
-  
-  return found && found.lexeme === token;
+  return found && found.token === token;
 }
 
 export const changeFunctionType = (type) => {
@@ -233,7 +233,7 @@ export function posFixAnalisys() {
 
   if (posFixExpression[0].symbol === 'snumero') posFixExpression = 'inteiro';
   else if (posFixExpression[0].symbol === 'sbooleano') posFixExpression = 'booleano';
-  else posFixExpression = posFixExpression[0].lexeme;
+  else posFixExpression = checkInteger(posFixExpression[0]) ? 'inteiro' : 'booleano';
 
   // console.log('DEPOIS: expressão posfix:', JSON.stringify(posFixExpression));
   // console.log('saiu da analise da posfix')
@@ -282,11 +282,12 @@ function checkBoolean(token) {
   if (token.lexeme !== 'verdadeiro' && token.lexeme !== 'false' && token.lexeme !== 'booleano') {
     const checkIsFunction = searchDeclarationFunction(token.lexeme)
     // console.log('checkBoolean: checkIsFunction', checkIsFunction);
-    if (checkIsFunction && checkIsFunction.tokenFunc === TokenType.BOOLEAN_FUNCTION) response = true;
 
     const checkIsVariable = searchDeclarationVariable(token.lexeme)
     // console.log('checkBoolean: checkIsVariable', checkIsVariable);
-    if (checkIsVariable && checkIsVariable.tokenType === 'booleano') response = true;
+
+    if (checkIsFunction && checkIsFunction.tokenFunc === TokenType.BOOLEAN_FUNCTION) response = true;
+    else if (checkIsVariable && checkIsVariable.tokenType === 'booleano') response = true;
     else response = false;
   }
   return response;
@@ -297,11 +298,12 @@ function checkInteger(token) {
   if (token.symbol !== 'snumero' && token.lexeme !== 'inteiro') {
     const checkIsFunction = searchDeclarationFunction(token.lexeme)
     // console.log('checkInteger: checkIsFunction', checkIsFunction);
-    if (checkIsFunction && checkIsFunction.tokenFunc === TokenType.INTEGER_FUNCTION) response = true;
 
     const checkIsVariable = searchDeclarationVariable(token.lexeme)
     // console.log('checkInteger: checkIsVariable', checkIsVariable);
-    if (checkIsVariable && checkIsVariable.tokenType === 'inteiro') response = true;
+
+    if (checkIsFunction && checkIsFunction.tokenFunc === TokenType.INTEGER_FUNCTION) response = true;
+    else if (checkIsVariable && checkIsVariable.tokenType === 'inteiro') response = true;
     else response = false;
   }
   return response;

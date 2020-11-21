@@ -267,33 +267,38 @@ export function functionCallAnalisys() {
 export function assignmentAnalysis() {
   const identifier = tokenList[index - 1];
 
-  const isFunction = SemanticAnalisys.searchDeclarationFunction(identifier.lexeme);
+  const isFunction = { response: SemanticAnalisys.searchDeclarationFunction(identifier.lexeme), index, line };
 
-  const isVariable = SemanticAnalisys.searchDeclarationVariable(identifier.lexeme);
+  const isVariable = { response: SemanticAnalisys.searchDeclarationVariable(identifier.lexeme), line };
 
   lerToken();
    
   expressionAnalysis();
+  // console.log(SemanticAnalisys.posFixExpression, ' --> SemanticAnalisys.posFixExpression');
+  // console.log('isFunction', isFunction)
+  // console.log('isVariable', isVariable)
 
-  if (isFunction) {
-    console.log('isFunction', !SemanticAnalisys.checkFunctionReturn(isFunction.lexeme))
-    if (!SemanticAnalisys.checkFunctionReturn(isFunction.lexeme))
-      throw new Error(`Erro - Linha ${line}: O retorno da função ${isFunction.lexeme} está declarado em lugar errado`);
-
-    if (isFunction.tokenFunc === SemanticAnalisys.TokenType.BOOLEAN_FUNCTION) {
-      if (SemanticAnalisys.posFixExpression === 'inteiro')
-        throw new Error(`Erro - Linha ${line}: O retorno da função ${isFunction.lexeme} não pode ser um valor inteiro`);
-    } else {
-      if (SemanticAnalisys.posFixExpression === 'booleano')
-        throw new Error(`Erro - Linha ${line}: O retorno da função ${isFunction.lexeme} não pode ser um valor booleano`);
+  if (isFunction.response) {
+    if (!SemanticAnalisys.checkFunctionReturn(isFunction.response.token)) {
+      index = isFunction.index;
+      throw new Error(`Erro - Linha ${isFunction.line}: O retorno da função ${isFunction.response.token} está declarado em lugar errado`);
     }
-  } else if (isVariable) {
-    if (isVariable.tokenType === 'booleano') {
+
+    if (isFunction.response.tokenFunc === SemanticAnalisys.TokenType.BOOLEAN_FUNCTION) {
       if (SemanticAnalisys.posFixExpression === 'inteiro')
-        throw new Error(`Erro - Linha ${line}: A variável ${isVariable.lexeme} não pode receber um valor inteiro`);
+        throw new Error(`Erro - Linha ${isFunction.line}: O retorno da função ${isFunction.response.token} não pode ser um valor inteiro`);
     } else {
       if (SemanticAnalisys.posFixExpression === 'booleano')
-        throw new Error(`Erro - Linha ${line}: A variável ${isVariable.lexeme} não pode receber um valor booleano`);
+        throw new Error(`Erro - Linha ${isFunction.line}: O retorno da função ${isFunction.response.token} não pode ser um valor booleano`);
+    }
+  } else if (isVariable.response) {
+
+    if (isVariable.response.tokenType === 'booleano') {
+      if (SemanticAnalisys.posFixExpression === 'inteiro')
+        throw new Error(`Erro - Linha ${isVariable.line}: A variável ${isVariable.response.token} não pode receber um valor inteiro`);
+    } else {
+      if (SemanticAnalisys.posFixExpression === 'booleano')
+        throw new Error(`Erro - Linha ${isVariable.line}: A variável ${isVariable.response.token} não pode receber um valor booleano`);
     }
   } else throw new Error(`Erro - Linha ${line}: O identificador que está recebendo a atribuição não é nem uma função nem uma variável`);
   
@@ -303,8 +308,20 @@ export function assignmentAnalysis() {
 function assignmentOrProcedureAnalysis() {
   lerToken();
 
-  if (SyntacticValidation.assignmentValidation(tokenList[index])) assignmentAnalysis();
-  else procedureAnalysis();
+  if (SyntacticValidation.assignmentValidation(tokenList[index])) {
+    if (!SemanticAnalisys.searchDeclarationVariableFunction(tokenList[index - 1].lexeme)) {
+      index -= 1;
+      throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" não é uma função ou uma variável`);
+    }
+    assignmentAnalysis();
+  }
+  else {
+    if (!SemanticAnalisys.searchDeclarationProcedure(tokenList[index - 1].lexeme)) {
+      index -= 1;
+      throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" não é um procedimento`);
+    }
+    procedureAnalysis();
+  }
 }
 
 function ifAnalysis() {
@@ -393,12 +410,7 @@ function writeAnalysis() {
 }
 
 function simpleCommandAnalysis() {
-  if (SyntacticValidation.identifierValidation(tokenList[index])) {
-    if (!SemanticAnalisys.searchDeclarationVariableProcedure(tokenList[index].lexeme))
-      throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" não foi declarado`);
-
-    assignmentOrProcedureAnalysis();
-  }
+  if (SyntacticValidation.identifierValidation(tokenList[index])) assignmentOrProcedureAnalysis();
 
   else if (SyntacticValidation.ifValidation(tokenList[index])) ifAnalysis();
 
