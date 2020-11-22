@@ -105,6 +105,7 @@ function functionDeclarationAnalysis() {
   if (found) throw new Error(`Erro - Linha ${line}: O nome da função "${tokenList[index].lexeme}" já foi declarado!`);
 
   SemanticAnalisys.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalisys.TokenType.FUNCTION)
+  SemanticAnalisys.changeReturnedFunction(SemanticAnalisys.BlockEnum.NOT_RETURNED);
 
   lerToken();
 
@@ -125,7 +126,11 @@ function functionDeclarationAnalysis() {
   lerToken();
 
   if (SyntacticValidation.semicolonValidation(tokenList[index])) blockAnalisys();
+  
+  if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.NOT_RETURNED)
+    throw new Error(`Erro - Linha ${line}: Não foi encontrado o retorno para a função.`);
 
+  SemanticAnalisys.changeFunctionType(SemanticAnalisys.BlockEnum.NOT_A_FUNCTION);
   SemanticAnalisys.decreaseLevel();
 }
 
@@ -266,7 +271,7 @@ export function functionCallAnalisys() {
 
 export function assignmentAnalysis() {
   const identifier = tokenList[index - 1];
-
+  
   const isFunction = { response: SemanticAnalisys.searchDeclarationFunction(identifier.lexeme), index, line };
 
   const isVariable = { response: SemanticAnalisys.searchDeclarationVariable(identifier.lexeme), line };
@@ -291,6 +296,11 @@ export function assignmentAnalysis() {
       if (SemanticAnalisys.posFixExpression === 'booleano')
         throw new Error(`Erro - Linha ${isFunction.line}: O retorno da função ${isFunction.response.token} não pode ser um valor booleano`);
     }
+
+    if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.RETURNED)
+      throw new Error(`Erro - Linha ${line}: Função já possui um retorno`);
+
+    SemanticAnalisys.changeReturnedFunction(SemanticAnalisys.BlockEnum.RETURNED);
   } else if (isVariable.response) {
 
     if (isVariable.response.tokenType === 'booleano') {
@@ -429,6 +439,9 @@ function commandAnalysis() {
 
   lerToken();
 
+  if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.RETURNED) 
+    throw new Error(`Erro - Linha ${line}: Encontrado comando após o retorno da função!`);
+  
   simpleCommandAnalysis();
 
   while (!SyntacticValidation.endValidation(tokenList[index])) {
@@ -436,6 +449,10 @@ function commandAnalysis() {
       throw new Error(`Erro - Linha ${line}: Esperado ponto e virgula, porem encontrado ${tokenList[index].lexeme}`);
     
     lerToken();
+
+    if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.RETURNED)
+      throw new Error(`Erro - Linha ${line}: Encontrado comando após o retorno da função!`);
+
     if (!SyntacticValidation.endValidation(tokenList[index])) simpleCommandAnalysis();
   }
 

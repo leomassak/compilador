@@ -1,21 +1,5 @@
 import * as SyntacticalAnalysis from '../syntactical/analisys';
 
-export let symbolTable = [];
-export let posFixExpression = [];
-export let posFixStack = [];
-export let posFixLevel = 0;
-
-let level = 1; // escopo
-
-export const TokenType = {
-  PROGRAM: 1,
-  VARIABLE: 2,
-  BOOLEAN_FUNCTION: 3,
-  INTEGER_FUNCTION: 4,
-  PROCEDURE: 5,
-  FUNCTION: 6,
-}
-
 const posFixPrecedence = [
   { lexeme: '-u', order: 7, read: 1, type: 'inteiro', return: 'inteiro' },
   { lexeme: '+u', order: 7, read: 1, type: 'inteiro', return: 'inteiro' },
@@ -33,6 +17,36 @@ const posFixPrecedence = [
   { lexeme: 'e', order: 2, read: 2, type: 'booleano', return: 'booleano' },
   { lexeme: 'ou', order: 1, read: 2, type: 'booleano', return: 'booleano' },
 ];
+
+export const TokenType = {
+  PROGRAM: 1,
+  VARIABLE: 2,
+  BOOLEAN_FUNCTION: 3,
+  INTEGER_FUNCTION: 4,
+  PROCEDURE: 5,
+  FUNCTION: 6,
+}
+
+export let symbolTable = [];
+export let posFixExpression = [];
+export let posFixStack = [];
+export let posFixLevel = 0;
+
+let level = 1; // escopo
+
+// ------------------------------------------------------ FUNÇÃO ------------------------------------------------------------
+
+export const BlockEnum = {
+  NOT_A_FUNCTION: 1,
+  NOT_RETURNED: 2,
+  RETURNED: 3,
+}
+
+export const changeReturnedFunction = (type) => {
+  returnedFunction = type;
+}
+
+export let returnedFunction = BlockEnum.NOT_A_FUNCTION;
 
 // ------------------------------------------------------ TABELA DE SÍMBOLOS ------------------------------------------------------------
 
