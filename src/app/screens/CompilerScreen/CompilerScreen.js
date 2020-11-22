@@ -13,7 +13,7 @@ import './styles.scss';
 
 import { pegaToken } from '../../functions/pegaToken';
 import * as SyntacticAnalysis from '../../syntactical/analisys';
-import * as SymbolTable from '../../symbolTable';
+import * as SemanticAnalysis from '../../semantic';
 
 function CompilerScreen() {
   const [tokenList, setTokenList] = useState([]);
@@ -22,8 +22,6 @@ function CompilerScreen() {
   const [syntacticError, setSyntacticError] = useState('');
   const [success, setSuccess] = useState(false);
   const [lpd, setLpd] = useState('');
-  const [editorId, setEditorId] = useState('');
-  const [consoleData, setConsoleData] = useState('');
   const [running, setRunning] = useState(false);
   const [selected, setSelected] = useState(0);
 
@@ -69,8 +67,12 @@ function CompilerScreen() {
     setSyntacticError('');
     setSuccess(false);
     setRunning(false);
-    SymbolTable.resetSymbolTable();
+    SemanticAnalysis.resetSymbolTable();
+    SemanticAnalysis.resetPosFix();
+    SemanticAnalysis.changeInsideFunction(false);
+    SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_A_FUNCTION);
     SyntacticAnalysis.reset();
+    console.clear();
   }
 
   function lexicalAnalysis(file) {
@@ -162,24 +164,11 @@ function CompilerScreen() {
         event.target.value = '';
       }
       reader.onload = async (e) => {
-        handleFileRemove();
+        stopRun();
         const file = e.target.result;
         setLpd(file);
       };
     } else alert('Este tipo de arquivo não é suportado!');
-  }
-
-  async function handleFileRemove() {
-    setTokenList([]);
-    setDisplayList(false)
-    setSyntacticErrorIndex(-1);
-    setSelected(0);
-    setSyntacticError('');
-    setSuccess(false);
-    setRunning(false);
-    setLpd('');
-    SymbolTable.resetSymbolTable();
-    SyntacticAnalysis.reset();
   }
 
   function getLog() {
