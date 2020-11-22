@@ -31,6 +31,7 @@ export let symbolTable = [];
 export let posFixExpression = [];
 export let posFixStack = [];
 export let posFixLevel = 0;
+export let expressionIsTrue = false;
 
 let level = 1; // escopo
 
@@ -42,15 +43,25 @@ export const BlockEnum = {
   RETURNED: 3,
 }
 
-export let insideFunction = false;
-
 export let returnedFunction = BlockEnum.NOT_A_FUNCTION;
 
-export const changeInsideFunction = (value) => insideFunction = value;
+export let functionPile = [];
+
+export let insideIF = false;
 
 export const changeReturnedFunction = (type) => {
   returnedFunction = type;
 }
+
+export const addInFunctionPile = (token) => functionPile.push(token);
+
+export const removeInFunctionPile = () => functionPile.pop();
+
+export const resetInFunctionPile = () => functionPile = [];
+
+export const checkFunctionReturn = (token) => functionPile[functionPile.length - 1].lexeme === token;
+
+export const changeInsideIf = (boolean) => insideIF = boolean;
 
 // ------------------------------------------------------ TABELA DE SÍMBOLOS ------------------------------------------------------------
 
@@ -157,12 +168,6 @@ export const searchDeclarationFunction = (token) => {
   return found;
 }
 
-export const checkFunctionReturn = (token) => {
-  const found = symbolTable.slice().reverse().find((item) => item.tokenFunc === TokenType.BOOLEAN_FUNCTION
-    || item.tokenFunc === TokenType.INTEGER_FUNCTION);
-  return insideFunction && found && found.token === token;
-}
-
 export const changeFunctionType = (type) => {
   let aux = [];
 
@@ -207,10 +212,11 @@ export function verifyPrecedence(newToken) {
     let shouldSkip = false;
     let newPosFixStack = [];
     posFixStack.slice().reverse().forEach((item) => {
-      if (item.lexeme === '(') shouldSkip = true;
+      if (item.lexeme === '(' && !shouldSkip) shouldSkip = true;
       else if (!shouldSkip) posFixExpression.push(item);
       else newPosFixStack.push(item);
     });
+    console.log('newPosFixStack', newPosFixStack);
     posFixStack = newPosFixStack.reverse();
   } else {
     const actualTokenOrder = (posFixStack[posFixStack.length - 1].lexeme === '(' || posFixStack[posFixStack.length - 1].lexeme === ')')
@@ -218,10 +224,18 @@ export function verifyPrecedence(newToken) {
     const newTokenOrder = posFixPrecedence.find((item) => item.lexeme === ((newToken && newToken.lexeme) || SyntacticalAnalysis.tokenList[index].lexeme)).order
     if (actualTokenOrder < newTokenOrder) posFixStack.push(newToken || SyntacticalAnalysis.tokenList[index])
     else {
+      let shouldSkip = false;
+      let newPosFixStack = [];
       posFixStack.slice().reverse().forEach((item) => {
-        if (item.lexeme !== '(' && item.lexeme !== ')') posFixExpression.push(item)
+        if (item.lexeme === '(') {
+          shouldSkip = true;
+          newPosFixStack.push(item);
+        }
+        else if (!shouldSkip) posFixExpression.push(item);
+        else newPosFixStack.push(item);
       });
-      posFixStack = [newToken || SyntacticalAnalysis.tokenList[index]];
+      posFixStack = newPosFixStack.reverse();
+      posFixStack.push(newToken || SyntacticalAnalysis.tokenList[index]);
     }
   }
 }
@@ -231,6 +245,9 @@ export function posFixAnalisys() {
   // console.log('ANTES: expressão posfix:', JSON.stringify(posFixExpression));
   let hasOperations = true;
   let index = 0;
+  if (posFixExpression.length === 1 && posFixExpression[0].lexeme === 'verdadeiro') expressionIsTrue = true;
+  else expressionIsTrue = false;
+
   do {
     const isOperator = posFixPrecedence.find((item) => item.lexeme === posFixExpression[index].lexeme)
     if (isOperator) {
@@ -297,7 +314,7 @@ function transformExpressionArray(operation, type, index) {
 
 function checkBoolean(token) {
   let response = true;
-  if (token.lexeme !== 'verdadeiro' && token.lexeme !== 'false' && token.lexeme !== 'booleano') {
+  if (token.lexeme !== 'verdadeiro' && token.lexeme !== 'falso' && token.lexeme !== 'booleano') {
     const checkIsFunction = searchDeclarationFunction(token.lexeme)
     // console.log('checkBoolean: checkIsFunction', checkIsFunction);
 

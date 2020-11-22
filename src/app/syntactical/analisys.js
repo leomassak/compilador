@@ -1,5 +1,5 @@
 import * as SyntacticValidation from './validations';
-import * as SemanticAnalisys from '../semantic';
+import * as SemanticAnalysis from '../semantic';
 
 export let index = 0;
 export let line = 0;
@@ -21,7 +21,7 @@ function typeAnalysis() {
   if (!SyntacticValidation.integerValidation(tokenList[index]) && !SyntacticValidation.booleanValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado inteiro ou booleano, porem encontrado ${tokenList[index].lexeme}`);
 
-  SemanticAnalisys.insertTypeInSymbolTable(tokenList[index].lexeme);
+  SemanticAnalysis.insertTypeInSymbolTable(tokenList[index].lexeme);
   lerToken();
 }
 
@@ -30,10 +30,10 @@ function varAnalysis() {
     if (!SyntacticValidation.identifierValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado um identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-    const isDuplicate = SemanticAnalisys.searchDuplicateVariable(tokenList[index].lexeme)
+    const isDuplicate = SemanticAnalysis.searchDuplicateVariable(tokenList[index].lexeme)
     if (isDuplicate) throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" já foi declarado!`);
 
-    SemanticAnalisys.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalisys.TokenType.VARIABLE);
+    SemanticAnalysis.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalysis.TokenType.VARIABLE);
     lerToken();
 
     if (!SyntacticValidation.commaValidation(tokenList[index]) && !SyntacticValidation.doublePointValidation(tokenList[index]))
@@ -73,15 +73,15 @@ function etVarAnalysis() {
 function subroutineDeclarationAnalysis() {
   lerToken();
 
-  SemanticAnalisys.increaseLevel();
+  SemanticAnalysis.increaseLevel();
 
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-  const found = SemanticAnalisys.searchDuplicateFunctionOrProcedure(tokenList[index].lexeme);
+  const found = SemanticAnalysis.searchDuplicateFunctionOrProcedure(tokenList[index].lexeme);
   if (found) throw new Error(`Erro - Linha ${line}: O nome do procedimento "${tokenList[index].lexeme}" já foi declarado!`);
 
-  SemanticAnalisys.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalisys.TokenType.PROCEDURE)
+  SemanticAnalysis.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalysis.TokenType.PROCEDURE)
 
   lerToken();
 
@@ -90,23 +90,24 @@ function subroutineDeclarationAnalysis() {
 
   blockAnalisys();
 
-  SemanticAnalisys.decreaseLevel();
+  SemanticAnalysis.decreaseLevel();
 }
 
 function functionDeclarationAnalysis() {
   lerToken();
 
-  SemanticAnalisys.increaseLevel();
+  SemanticAnalysis.increaseLevel();
 
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-  const found = SemanticAnalisys.searchDuplicateFunctionOrProcedure(tokenList[index].lexeme);
+  const found = SemanticAnalysis.searchDuplicateFunctionOrProcedure(tokenList[index].lexeme);
   if (found) throw new Error(`Erro - Linha ${line}: O nome da função "${tokenList[index].lexeme}" já foi declarado!`);
 
-  SemanticAnalisys.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalisys.TokenType.FUNCTION)
-  SemanticAnalisys.changeReturnedFunction(SemanticAnalisys.BlockEnum.NOT_RETURNED);
-  SemanticAnalisys.changeInsideFunction(true);
+  SemanticAnalysis.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalysis.TokenType.FUNCTION)
+  SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_RETURNED);
+  SemanticAnalysis.addInFunctionPile({ lexeme: tokenList[index].lexeme, tokenFunc: SemanticAnalysis.TokenType.FUNCTION });
+  console.log('functionPile', SemanticAnalysis.functionPile);
 
   lerToken();
 
@@ -119,21 +120,21 @@ function functionDeclarationAnalysis() {
     throw new Error(`Erro - Linha ${line}: Esperado booleano ou inteiro, porem encontrado ${tokenList[index].lexeme}`);
 
   if (SyntacticValidation.booleanValidation(tokenList[index])) {
-      SemanticAnalisys.changeFunctionType(SemanticAnalisys.TokenType.BOOLEAN_FUNCTION);
+      SemanticAnalysis.changeFunctionType(SemanticAnalysis.TokenType.BOOLEAN_FUNCTION);
   } else {
-      SemanticAnalisys.changeFunctionType(SemanticAnalisys.TokenType.INTEGER_FUNCTION);
+      SemanticAnalysis.changeFunctionType(SemanticAnalysis.TokenType.INTEGER_FUNCTION);
   }
 
   lerToken();
 
   if (SyntacticValidation.semicolonValidation(tokenList[index])) blockAnalisys();
 
-  if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.NOT_RETURNED)
+  if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.NOT_RETURNED)
     throw new Error(`Erro - Linha ${line}: Não foi encontrado o retorno para a função.`);
 
-  SemanticAnalisys.changeReturnedFunction(SemanticAnalisys.BlockEnum.NOT_A_FUNCTION);
-  SemanticAnalisys.changeInsideFunction(false);
-  SemanticAnalisys.decreaseLevel();
+  SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_A_FUNCTION);
+  SemanticAnalysis.removeInFunctionPile();
+  SemanticAnalysis.decreaseLevel();
 }
 
 function subroutineAnalysis() {
@@ -158,28 +159,28 @@ function expressionAnalysis() {
       || SyntacticValidation.lowerEqualValidation(tokenList[index])
       || SyntacticValidation.diffValidation(tokenList[index])) {
 
-    SemanticAnalisys.verifyPrecedence(); 
+    SemanticAnalysis.verifyPrecedence(); 
 
     lerToken();
      
     simpleExpressionAnalysis();
   }
 
-  if (SemanticAnalisys.posFixLevel === 0) {
-    SemanticAnalisys.posFixStack.slice().reverse().forEach((item) => {
-      if (item.lexeme !== '(' && item.lexeme !== ')') SemanticAnalisys.posFixExpression.push(item)
+  if (SemanticAnalysis.posFixLevel === 0) {
+    SemanticAnalysis.posFixStack.slice().reverse().forEach((item) => {
+      if (item.lexeme !== '(' && item.lexeme !== ')') SemanticAnalysis.posFixExpression.push(item)
     });
 
-    SemanticAnalisys.posFixAnalisys();
-  } else SemanticAnalisys.changePosFix(SemanticAnalisys.posFixLevel - 1);
+    SemanticAnalysis.posFixAnalisys();
+  } else SemanticAnalysis.changePosFix(SemanticAnalysis.posFixLevel - 1);
 }
 
 function simpleExpressionAnalysis() {
   if (SyntacticValidation.plusValidation(tokenList[index])
     || SyntacticValidation.minusValidation(tokenList[index])) {
     
-    if (SyntacticValidation.plusValidation(tokenList[index])) SemanticAnalisys.verifyPrecedence({ symbol: 'smais_unario', lexeme: '+u', line });
-    else SemanticAnalisys.verifyPrecedence({ symbol: 'smenos_unario', lexeme: '-u', line });
+    if (SyntacticValidation.plusValidation(tokenList[index])) SemanticAnalysis.verifyPrecedence({ symbol: 'smais_unario', lexeme: '+u', line });
+    else SemanticAnalysis.verifyPrecedence({ symbol: 'smenos_unario', lexeme: '-u', line });
     lerToken();
   }
   
@@ -189,7 +190,7 @@ function simpleExpressionAnalysis() {
       || SyntacticValidation.minusValidation(tokenList[index])
       || SyntacticValidation.orValidation(tokenList[index])) {
 
-    SemanticAnalisys.verifyPrecedence();
+    SemanticAnalysis.verifyPrecedence();
     
     lerToken();
 
@@ -198,54 +199,55 @@ function simpleExpressionAnalysis() {
 }
 
 export function factorAnalisys() {
+  // console.log('factor', tokenList[index])
   if (SyntacticValidation.identifierValidation(tokenList[index])) {
-    const identifierFound = SemanticAnalisys.searchTable(tokenList[index].lexeme);
+    const identifierFound = SemanticAnalysis.searchTable(tokenList[index].lexeme);
 
-    if (!identifierFound || (identifierFound.tokenFunc !== SemanticAnalisys.TokenType.VARIABLE
-      && identifierFound.tokenFunc !== SemanticAnalisys.TokenType.BOOLEAN_FUNCTION
-      && identifierFound.tokenFunc !== SemanticAnalisys.TokenType.INTEGER_FUNCTION))
+    if (!identifierFound || (identifierFound.tokenFunc !== SemanticAnalysis.TokenType.VARIABLE
+      && identifierFound.tokenFunc !== SemanticAnalysis.TokenType.BOOLEAN_FUNCTION
+      && identifierFound.tokenFunc !== SemanticAnalysis.TokenType.INTEGER_FUNCTION))
       throw new Error(`Erro - Linha ${line}: O fator "${tokenList[index].lexeme}" não foi declarado`);
 
-    if (identifierFound.tokenFunc === SemanticAnalisys.TokenType.VARIABLE) {
-      SemanticAnalisys.posFixExpression.push(tokenList[index]);
+    if (identifierFound.tokenFunc === SemanticAnalysis.TokenType.VARIABLE) {
+      SemanticAnalysis.posFixExpression.push(tokenList[index]);
 
       lerToken();
     }
     else {
-      SemanticAnalisys.posFixExpression.push(tokenList[index]);
+      SemanticAnalysis.posFixExpression.push(tokenList[index]);
 
       functionCallAnalisys();
     }
   }
 
   else if (SyntacticValidation.numberValidation(tokenList[index])) {
-    SemanticAnalisys.posFixExpression.push(tokenList[index]);
+    SemanticAnalysis.posFixExpression.push(tokenList[index]);
 
     lerToken();
   }
 
   else if (SyntacticValidation.notValidation(tokenList[index])) {
-    SemanticAnalisys.verifyPrecedence();
+    SemanticAnalysis.verifyPrecedence();
 
     lerToken();
 
     factorAnalisys();
   } else if (SyntacticValidation.openBracketValidation(tokenList[index])) {
-    SemanticAnalisys.verifyPrecedence();
+    SemanticAnalysis.verifyPrecedence();
 
     lerToken();
 
-    SemanticAnalisys.changePosFix(SemanticAnalisys.posFixLevel + 1);
+    SemanticAnalysis.changePosFix(SemanticAnalysis.posFixLevel + 1);
     expressionAnalysis();
 
     if (!SyntacticValidation.closeBracketValidation(tokenList[index]))
       throw new Error(`Erro - Linha ${line}: Esperado fecha parênteses, porem encontrado ${tokenList[index].lexeme}`);
 
-    SemanticAnalisys.verifyPrecedence();
+    SemanticAnalysis.verifyPrecedence();
 
     lerToken();
   } else if (SyntacticValidation.trueValidation(tokenList[index]) || SyntacticValidation.falseValidation(tokenList[index])) {
-    SemanticAnalisys.posFixExpression.push(tokenList[index]);
+    SemanticAnalysis.posFixExpression.push(tokenList[index]);
 
     lerToken();
   } else throw new Error(`Erro - Linha ${line}: Esperado um fator, porem encontrado ${tokenList[index].lexeme}`);
@@ -257,7 +259,7 @@ export function termAnalisys() {
   while (SyntacticValidation.multValidation(tokenList[index])
     || SyntacticValidation.divValidation(tokenList[index])
     || SyntacticValidation.andValidation(tokenList[index])) {
-    SemanticAnalisys.verifyPrecedence();
+    SemanticAnalysis.verifyPrecedence();
 
     lerToken();
 
@@ -273,62 +275,68 @@ export function functionCallAnalisys() {
 
 export function assignmentAnalysis() {
   const identifier = tokenList[index - 1];
-  
-  const isFunction = { response: SemanticAnalisys.searchDeclarationFunction(identifier.lexeme), index, line };
 
-  const isVariable = { response: SemanticAnalisys.searchDeclarationVariable(identifier.lexeme), line };
+  const changeReturnedFunction = (SemanticAnalysis.insideIF && SemanticAnalysis.expressionIsTrue) || !SemanticAnalysis.insideIF;
+  
+  const isFunction = { response: SemanticAnalysis.searchDeclarationFunction(identifier.lexeme), index, line };
+
+  const isVariable = { response: SemanticAnalysis.searchDeclarationVariable(identifier.lexeme), line };
 
   lerToken();
    
   expressionAnalysis();
-  // console.log(SemanticAnalisys.posFixExpression, ' --> SemanticAnalisys.posFixExpression');
+
+  // console.log(SemanticAnalysis.posFixExpression, ' --> SemanticAnalysis.posFixExpression');
   // console.log('isFunction', isFunction)
   // console.log('isVariable', isVariable)
 
   if (isFunction.response) {
-    if (!SemanticAnalisys.checkFunctionReturn(isFunction.response.token)) {
+    if (!SemanticAnalysis.checkFunctionReturn(isFunction.response.token)) {
       index = isFunction.index;
       throw new Error(`Erro - Linha ${isFunction.line}: O retorno da função ${isFunction.response.token} está declarado em lugar errado`);
     }
 
-    if (isFunction.response.tokenFunc === SemanticAnalisys.TokenType.BOOLEAN_FUNCTION) {
-      if (SemanticAnalisys.posFixExpression === 'inteiro')
+    if (isFunction.response.tokenFunc === SemanticAnalysis.TokenType.BOOLEAN_FUNCTION) {
+      if (SemanticAnalysis.posFixExpression === 'inteiro')
         throw new Error(`Erro - Linha ${isFunction.line}: O retorno da função ${isFunction.response.token} não pode ser um valor inteiro`);
     } else {
-      if (SemanticAnalisys.posFixExpression === 'booleano')
+      if (SemanticAnalysis.posFixExpression === 'booleano')
         throw new Error(`Erro - Linha ${isFunction.line}: O retorno da função ${isFunction.response.token} não pode ser um valor booleano`);
     }
 
-    if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.RETURNED)
-      throw new Error(`Erro - Linha ${line}: Função já possui um retorno`);
-
-    SemanticAnalisys.changeReturnedFunction(SemanticAnalisys.BlockEnum.RETURNED);
+    // console.log('line', line);
+    // console.log('SemanticAnalysis.insideIF', SemanticAnalysis.insideIF);
+    // console.log('SemanticAnalysis.returnedFunction', SemanticAnalysis.returnedFunction);
+    // if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.RETURNED)
+    //   throw new Error(`Erro - Linha ${line}: Função já possui um retorno`);
+    console.log('Retorno da função');
+    if (changeReturnedFunction) SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.RETURNED);
   } else if (isVariable.response) {
 
     if (isVariable.response.tokenType === 'booleano') {
-      if (SemanticAnalisys.posFixExpression === 'inteiro')
+      if (SemanticAnalysis.posFixExpression === 'inteiro')
         throw new Error(`Erro - Linha ${isVariable.line}: A variável ${isVariable.response.token} não pode receber um valor inteiro`);
     } else {
-      if (SemanticAnalisys.posFixExpression === 'booleano')
+      if (SemanticAnalysis.posFixExpression === 'booleano')
         throw new Error(`Erro - Linha ${isVariable.line}: A variável ${isVariable.response.token} não pode receber um valor booleano`);
     }
   } else throw new Error(`Erro - Linha ${line}: O identificador que está recebendo a atribuição não é nem uma função nem uma variável`);
   
-  SemanticAnalisys.resetPosFix();
+  SemanticAnalysis.resetPosFix();
 }
 
 function assignmentOrProcedureAnalysis() {
   lerToken();
 
   if (SyntacticValidation.assignmentValidation(tokenList[index])) {
-    if (!SemanticAnalisys.searchDeclarationVariableFunction(tokenList[index - 1].lexeme)) {
+    if (!SemanticAnalysis.searchDeclarationVariableFunction(tokenList[index - 1].lexeme)) {
       index -= 1;
       throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" não é uma função ou uma variável`);
     }
     assignmentAnalysis();
   }
   else {
-    if (!SemanticAnalisys.searchDeclarationProcedure(tokenList[index - 1].lexeme)) {
+    if (!SemanticAnalysis.searchDeclarationProcedure(tokenList[index - 1].lexeme)) {
       index -= 1;
       throw new Error(`Erro - Linha ${line}: O identificador "${tokenList[index].lexeme}" não é um procedimento`);
     }
@@ -338,19 +346,23 @@ function assignmentOrProcedureAnalysis() {
 
 function ifAnalysis() {
   lerToken();
-  
+  console.log('ENTROU NO IF')
+  SemanticAnalysis.changeInsideIf(true);
+
   expressionAnalysis();
-  console.log('CONDIÇÃO DO IF É:', SemanticAnalisys.posFixExpression);
-  if (SemanticAnalisys.posFixExpression !== 'booleano')
+  console.log('CONDIÇÃO DO IF É:', SemanticAnalysis.posFixExpression);
+  if (SemanticAnalysis.posFixExpression !== 'booleano')
     throw new Error(`Erro - Linha ${line}: Condição do comando "se" não pode ser do tipo inteiro`);
 
-  SemanticAnalisys.resetPosFix();
+  SemanticAnalysis.resetPosFix();
 
   if (SyntacticValidation.elseValidation(tokenList[index])) {
-    
     lerToken();
 
     simpleCommandAnalysis();
+
+    SemanticAnalysis.changeInsideIf(false);
+
     if (SyntacticValidation.elseIfValidation(tokenList[index])) {
       lerToken();
       
@@ -364,10 +376,10 @@ function whileAnalysis() {
 
   expressionAnalysis();
 
-  if (SemanticAnalisys.posFixExpression !== 'booleano')
+  if (SemanticAnalysis.posFixExpression !== 'booleano')
     throw new Error(`Erro - Linha ${line}: Condição do comando "enquanto" não pode ser do tipo inteiro`);
 
-  SemanticAnalisys.resetPosFix();
+  SemanticAnalysis.resetPosFix();
 
   if (!SyntacticValidation.doValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado um fator, porem encontrado ${tokenList[index].lexeme}`);
@@ -388,7 +400,7 @@ function readAnalysis() {
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-  if (!SemanticAnalisys.searchDeclarationVariable(tokenList[index].lexeme))
+  if (!SemanticAnalysis.searchDeclarationVariable(tokenList[index].lexeme))
     throw new Error(`Erro - Linha ${line}: Não foi encontrado nenhuma variável "${tokenList[index].lexeme}"`);
 
   lerToken();
@@ -410,7 +422,7 @@ function writeAnalysis() {
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
   
-  if (!SemanticAnalisys.searchDeclarationVariableFunction(tokenList[index].lexeme))
+  if (!SemanticAnalysis.searchDeclarationVariableFunction(tokenList[index].lexeme))
     throw new Error(`Erro - Linha ${line}: Não foi encontrado nenhuma variável ou função com nome "${tokenList[index].lexeme}"`);
 
   lerToken();
@@ -441,7 +453,7 @@ function commandAnalysis() {
 
   lerToken();
 
-  if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.RETURNED) 
+  if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.RETURNED) 
     throw new Error(`Erro - Linha ${line}: Encontrado comando após o retorno da função!`);
   
   simpleCommandAnalysis();
@@ -453,7 +465,7 @@ function commandAnalysis() {
     lerToken();
 
     if (!SyntacticValidation.endValidation(tokenList[index])) {
-      if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.RETURNED)
+      if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.RETURNED)
         throw new Error(`Erro - Linha ${line}: Encontrado comando após o retorno da função!`);
 
       simpleCommandAnalysis();
@@ -484,8 +496,8 @@ export function initSyntacticalAnalisys(lexicalTokenList) {
   if (!SyntacticValidation.identifierValidation(tokenList[index]))
     throw new Error(`Erro - Linha ${line}: Esperado identificador, porem encontrado ${tokenList[index].lexeme}`);
 
-  SemanticAnalisys.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalisys.TokenType.PROGRAM)
-  
+  SemanticAnalysis.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalysis.TokenType.PROGRAM)
+    
   lerToken();
 
   if (!SyntacticValidation.semicolonValidation(tokenList[index]))

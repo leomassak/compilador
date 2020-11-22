@@ -143,7 +143,7 @@ export function numberValidation(token) {
 }
 
 export function notValidation(token) {
-  return token.symbol === 'sdiv';
+  return token.symbol === 'snao';
 }
 
 export function trueValidation(token) {
