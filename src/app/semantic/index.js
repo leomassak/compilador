@@ -42,11 +42,15 @@ export const BlockEnum = {
   RETURNED: 3,
 }
 
+export let insideFunction = false;
+
+export let returnedFunction = BlockEnum.NOT_A_FUNCTION;
+
+export const changeInsideFunction = (value) => insideFunction = value;
+
 export const changeReturnedFunction = (type) => {
   returnedFunction = type;
 }
-
-export let returnedFunction = BlockEnum.NOT_A_FUNCTION;
 
 // ------------------------------------------------------ TABELA DE SÍMBOLOS ------------------------------------------------------------
 
@@ -156,7 +160,7 @@ export const searchDeclarationFunction = (token) => {
 export const checkFunctionReturn = (token) => {
   const found = symbolTable.slice().reverse().find((item) => item.tokenFunc === TokenType.BOOLEAN_FUNCTION
     || item.tokenFunc === TokenType.INTEGER_FUNCTION);
-  return found && found.token === token;
+  return insideFunction && found && found.token === token;
 }
 
 export const changeFunctionType = (type) => {

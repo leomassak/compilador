@@ -136,6 +136,8 @@ function CompilerScreen() {
     setSuccess(false);
     SemanticAnalysis.resetSymbolTable();
     SemanticAnalysis.resetPosFix();
+    SemanticAnalysis.changeInsideFunction(false);
+    SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_A_FUNCTION);
     SyntacticAnalysis.reset();
     console.clear();
   }

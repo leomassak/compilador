@@ -106,6 +106,7 @@ function functionDeclarationAnalysis() {
 
   SemanticAnalisys.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalisys.TokenType.FUNCTION)
   SemanticAnalisys.changeReturnedFunction(SemanticAnalisys.BlockEnum.NOT_RETURNED);
+  SemanticAnalisys.changeInsideFunction(true);
 
   lerToken();
 
@@ -126,11 +127,12 @@ function functionDeclarationAnalysis() {
   lerToken();
 
   if (SyntacticValidation.semicolonValidation(tokenList[index])) blockAnalisys();
-  
+
   if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.NOT_RETURNED)
     throw new Error(`Erro - Linha ${line}: Não foi encontrado o retorno para a função.`);
 
-  SemanticAnalisys.changeFunctionType(SemanticAnalisys.BlockEnum.NOT_A_FUNCTION);
+  SemanticAnalisys.changeReturnedFunction(SemanticAnalisys.BlockEnum.NOT_A_FUNCTION);
+  SemanticAnalisys.changeInsideFunction(false);
   SemanticAnalisys.decreaseLevel();
 }
 
@@ -450,10 +452,12 @@ function commandAnalysis() {
     
     lerToken();
 
-    if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.RETURNED)
-      throw new Error(`Erro - Linha ${line}: Encontrado comando após o retorno da função!`);
+    if (!SyntacticValidation.endValidation(tokenList[index])) {
+      if (SemanticAnalisys.returnedFunction === SemanticAnalisys.BlockEnum.RETURNED)
+        throw new Error(`Erro - Linha ${line}: Encontrado comando após o retorno da função!`);
 
-    if (!SyntacticValidation.endValidation(tokenList[index])) simpleCommandAnalysis();
+      simpleCommandAnalysis();
+    }
   }
 
   lerToken();
