@@ -211,7 +211,7 @@ function CompilerScreen() {
         <>
         {displayList && tokenList.map((item, index) => (
           <>
-            {item.symbol !== 'Erro' && (
+            {item.symbol !== 'Erro' && index < syntacticErrorIndex && (
             <>
               <p className="panel-text-lines">
                 {`Linha -> ${item.line}`}
@@ -286,11 +286,9 @@ function CompilerScreen() {
             <div className="tab-container">
               <div className={`console-tab ${selected === 0 && 'tab-selected'}`} onClick={() => setSelected(0)}>
                 <span >Console</span>
-                {selected === 0 && <span className="tab-underline"/>}
               </div>
               <div className={`console-tab ${selected === 1 && 'tab-selected'}`} onClick={() => setSelected(1)}>
                 <span >Tokens</span>
-                {selected === 1 && <span className="tab-underline"/>}
               </div>
             </div>
             <div className="console-logs">
