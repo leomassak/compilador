@@ -25,6 +25,7 @@ function CompilerScreen() {
   const [editorId, setEditorId] = useState('');
   const [consoleData, setConsoleData] = useState('');
   const [running, setRunning] = useState(false);
+  const [selected, setSelected] = useState(0);
 
 
   const ESPECIAL_COMMANDS = {
@@ -49,10 +50,11 @@ function CompilerScreen() {
     lineWrapping: true,
   };
 
-  async function runCode() {
+  function runCode() {
     if(lpd.length > 0) {
-      const list = await lexicalAnalysis(lpd);
-      await syntacticAnalysis(list); 
+      stopRun();
+      const list = lexicalAnalysis(lpd);
+      syntacticAnalysis(list); 
       setTokenList(list);
       setDisplayList(true);
       setRunning(true);
@@ -63,6 +65,7 @@ function CompilerScreen() {
     setTokenList([]);
     setDisplayList(false)
     setSyntacticErrorIndex(-1);
+    setSelected(0);
     setSyntacticError('');
     setSuccess(false);
     setRunning(false);
@@ -170,12 +173,74 @@ function CompilerScreen() {
     setTokenList([]);
     setDisplayList(false)
     setSyntacticErrorIndex(-1);
+    setSelected(0);
     setSyntacticError('');
     setSuccess(false);
     setRunning(false);
     setLpd('');
     SymbolTable.resetSymbolTable();
     SyntacticAnalysis.reset();
+  }
+
+  function getLog() {
+    if (selected === 0) {
+      return (
+        <>
+           {displayList && tokenList.map((item, index) => (
+          <>
+            {(syntacticErrorIndex === -1 || index < syntacticErrorIndex) && (
+              <>
+                {item.symbol === 'Erro' && (
+                  <>
+                    <p className="panel-error-text-lines">
+                      {`Linha -> ${item.line}`}
+                    </p>
+                    <p className="panel-error-text-lines">
+                      {`Erro -> ${item.lexeme}`}
+                      <br />
+                    </p>
+                  </>
+                )}
+              </>
+            )}
+          </>
+        ))}
+        {syntacticErrorIndex >= 0 && (
+          <p className="panel-error-text-lines">
+            {syntacticError}
+          </p>
+        )}
+        {success && (
+          <p className="panel-success-text-lines">
+            Compilado com sucesso!
+          </p>
+        )}
+        </>
+      )
+    } else {
+      return (
+        <>
+        {displayList && tokenList.map((item, index) => (
+          <>
+            {item.symbol !== 'Erro' && (
+            <>
+              <p className="panel-text-lines">
+                {`Linha -> ${item.line}`}
+              </p>
+              <p className="panel-text-lines">
+                {`Símbolo -> ${item.symbol}`}
+              </p>
+              <p className="panel-text-lines">
+                {`Lexema -> ${item.lexeme}`}
+              </p>
+              <br />
+            </>
+            )}
+          </>
+        ))}
+        </>
+      )
+    }
   }
 
   return (
@@ -195,14 +260,6 @@ function CompilerScreen() {
             <li>
               <button
                 type="button"
-                onClick={handleFileRemove}
-              >
-                Limpar
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
                 onClick={runCode}
               >
                 Compilar
@@ -213,7 +270,7 @@ function CompilerScreen() {
                 type="button"
                 onClick={stopRun}
               >
-                Interromper
+                Finalizar compilação
               </button>
             </li>
           </ul>
@@ -237,7 +294,19 @@ function CompilerScreen() {
         {running && (
           <section id="console">
           <div className="console-container">
-            <textarea value={syntacticError} readOnly />
+            <div className="tab-container">
+              <div className={`console-tab ${selected === 0 && 'tab-selected'}`} onClick={() => setSelected(0)}>
+                <span >Console</span>
+                {selected === 0 && <span className="tab-underline"/>}
+              </div>
+              <div className={`console-tab ${selected === 1 && 'tab-selected'}`} onClick={() => setSelected(1)}>
+                <span >Tokens</span>
+                {selected === 1 && <span className="tab-underline"/>}
+              </div>
+            </div>
+            <div className="console-logs">
+              {getLog()}
+            </div>
           </div>
        </section>
         )}

@@ -79,7 +79,7 @@ input[type='file'] {
 
 label {
   cursor: pointer;
-  font-size: 95%;
+  font-size: 90%;
 }
 
 button {
@@ -105,10 +105,47 @@ button {
   background-color: #282942;
 }
 
-textarea {
+.tab-container {
   width: 100%;
-  height: 95vh;
-  resize: none;
-  background-color: #282942;
-  border: none;
+  height: 2.5rem;
+  display: flex;
+  flex-direction: row;
+  color: #FFFFFF;
+  align-items: center;
+}
+
+.console-tab {
+  height: 100%;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  cursor: pointer;
+  font-size: 12px;
+  overflow: hidden;
+}
+
+.tab-selected {
+  position: relative;
+  background-color: var(--bg-dracula);
+  font-weight: bold;
+  overflow: hidden;
+}
+
+.tab-underline {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background-color: var(--pink);
+  bottom: 0;
+}
+
+.console-logs {
+  height: 90vh;
+  color: #FFF;
+  padding: 10px;
+  font-size: 12px;
+  overflow-y: auto;
 }
