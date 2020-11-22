@@ -1,13 +1,11 @@
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useState, useEffect } from 'react';
-import { Controlled as CodeMirror } from 'react-codemirror2';
+import React, { useState, useEffect, useRef } from 'react';
+import AceEditor from "react-ace";
 
-import 'codemirror/lib/codemirror.css';
-import 'codemirror/theme/material.css';
-import 'codemirror/theme/dracula.css';
-
-import 'codemirror/mode/markdown/markdown';
+import "ace-builds/src-noconflict/mode-text";
+import "ace-builds/src-noconflict/theme-dracula";
+import "ace-builds/src-noconflict/ext-language_tools"
 
 import './styles.scss';
 
@@ -24,6 +22,7 @@ function CompilerScreen() {
   const [lpd, setLpd] = useState('');
   const [running, setRunning] = useState(false);
   const [selected, setSelected] = useState(0);
+  const [annotation, setAnnotation] = useState([]);
 
 
   const ESPECIAL_COMMANDS = {
@@ -41,12 +40,6 @@ function CompilerScreen() {
     KEY: 2,
   };
 
-  const codeMirrorOptions = {
-    theme: 'dracula',
-    lineNumbers: true,
-    scrollbarStyle: null,
-    lineWrapping: true,
-  };
 
   function runCode() {
     if(lpd.length > 0) {
@@ -61,6 +54,7 @@ function CompilerScreen() {
 
   function stopRun() {
     setTokenList([]);
+    setAnnotation([]);
     setDisplayList(false)
     setSyntacticErrorIndex(-1);
     setSelected(0);
@@ -153,6 +147,7 @@ function CompilerScreen() {
     } catch (err) {
       setSyntacticError(err.message);
       setSyntacticErrorIndex(SyntacticAnalysis.index);
+      setAnnotation([{ row: SyntacticAnalysis.line - 1, column: 0, type: 'error', text: err.message}])
     }
   }
 
@@ -268,17 +263,27 @@ function CompilerScreen() {
     <div id="container">
     <div id="code">
         <section id="lpdmixed">
-          <CodeMirror
-            value={lpd}
-            options={{
-              mode: 'markdown',
-              readOnly: running,
-              ...codeMirrorOptions,
-            }}
-            onBeforeChange={(editor, data, code) => {
-              setLpd(code);
-            }}
-          />
+          <AceEditor
+          mode="text"
+          theme="dracula"
+          className="editor-style"
+          fontSize={14}
+          width={'100%'}
+          height={'92vh'}
+          value={lpd}
+          annotations={annotation}  
+          onChange={(value) => setLpd(value)}
+          name="ace-editor"
+          editorProps={{ $blockScrolling: true }}
+          setOptions={{
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true,
+            enableSnippets: true,
+            showLineNumbers: true,
+            showPrintMargin: false,
+            readOnly: running,
+          }}
+        />
         </section>
         {running && (
           <section id="console">
