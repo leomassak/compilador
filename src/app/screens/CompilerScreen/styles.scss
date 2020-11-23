@@ -101,6 +101,10 @@ button {
   align-items: center;
 }
 
+.ace_scrollbar {
+  display: none;
+}
+
 .console-tab {
   height: 100%;
   width: 50%;
@@ -134,6 +138,23 @@ button {
   padding: 15px;
   background-color: var(--bg-dracula);
 }
+
+::-webkit-scrollbar {
+  width: 1rem;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dracula);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--black);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 
 .console-logs {
   height: 90vh;
