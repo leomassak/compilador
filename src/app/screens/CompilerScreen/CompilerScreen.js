@@ -1,11 +1,14 @@
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable jsx-a11y/label-has-associated-control */
+/*eslint-disable no-alert, no-console */
+
 import React, { useState, useEffect, useRef } from 'react';
 import AceEditor from "react-ace";
 
 import "ace-builds/src-noconflict/mode-text";
-import "ace-builds/src-noconflict/theme-dracula";
 import "ace-builds/src-noconflict/ext-language_tools"
+import "ace-builds/src-min-noconflict/ext-searchbox";
+import "ace-builds/src-noconflict/mode-jsx";
 
 import './styles.scss';
 
@@ -23,7 +26,23 @@ function CompilerScreen() {
   const [running, setRunning] = useState(false);
   const [selected, setSelected] = useState(0);
   const [annotation, setAnnotation] = useState([]);
+  const [theme, setTheme] = useState('dracula');
+  const [showThemeDropDown, setShowThemeDropDown] = useState(false);
 
+  const themes = [
+  "dracula",
+  "monokai",
+  "github",
+  "tomorrow",
+  "kuroir",
+  "twilight",
+  "xcode",
+  "textmate",
+  "solarized_dark",
+  "solarized_light",
+];
+
+themes.forEach((theme) => require(`ace-builds/src-noconflict/theme-${theme}`));
 
   const ESPECIAL_COMMANDS = {
     SKIP_LINE: '\n',
@@ -228,6 +247,15 @@ function CompilerScreen() {
     }
   }
 
+  function toggleDropDown() {
+    setShowThemeDropDown(prevState => !prevState);
+  }
+
+  function handleTheme(theme) {
+    setTheme(theme);
+    toggleDropDown();
+  }
+
   return (
     <>
     <nav>
@@ -240,12 +268,13 @@ function CompilerScreen() {
                 id="file-button"
                 onChange={handleFileSelector}
               />
-              <label htmlFor="file-button">Inserir Arquivo</label>
+              <label htmlFor="file-button">Arquivo</label>
             </li>
             <li>
               <button
                 type="button"
                 onClick={runCode}
+                className="header-button"
               >
                 Compilar
               </button>
@@ -254,9 +283,26 @@ function CompilerScreen() {
               <button
                 type="button"
                 onClick={stopRun}
+                className="header-button"
               >
-                Finalizar compilação
+                Finalizar
               </button>
+            </li>
+            <li className="button-container">
+              <button
+                type="button"
+                onClick={toggleDropDown}
+                className="header-button"
+              >
+                Tema
+              </button>
+              {showThemeDropDown && (
+                <div className="theme-dropdown">
+                  {themes.map((theme) => (
+                    <span className="theme-button" onClick={() => handleTheme(theme)}>{theme}</span>
+                  ))}
+                </div>
+              )}
             </li>
           </ul>
         </div>
@@ -266,7 +312,7 @@ function CompilerScreen() {
         <section id="lpdmixed">
           <AceEditor
           mode="text"
-          theme="dracula"
+          theme={theme}
           className="editor-style"
           fontSize={14}
           width={'100%'}

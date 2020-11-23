@@ -105,6 +105,10 @@ button {
   display: none;
 }
 
+.header-button {
+  width: 5rem;
+}
+
 .console-tab {
   height: 100%;
   width: 50%;
@@ -161,6 +165,30 @@ button {
   padding: 10px;
   font-size: 14px;
   overflow-y: auto;
+}
+
+.button-container {
+  position: relative;
+}
+
+.theme-dropdown {
+  position:  absolute;
+  width: 10rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-button {
+  width: 100%;
+  height: 2.5rem;
+  border: 1px solid var(--bg-dracula);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #282942;
+  cursor: pointer;
 }
 
 .panel-error-text-lines {
