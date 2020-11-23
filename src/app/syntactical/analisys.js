@@ -276,7 +276,7 @@ export function functionCallAnalisys() {
 export function assignmentAnalysis() {
   const identifier = tokenList[index - 1];
 
-  const changeReturnedFunction = (SemanticAnalysis.insideIF && SemanticAnalysis.expressionIsTrue) || !SemanticAnalysis.insideIF;
+  const changeReturnedFunction = !SemanticAnalysis.insideIF || SemanticAnalysis.insideELSE;
   
   const isFunction = { response: SemanticAnalysis.searchDeclarationFunction(identifier.lexeme), index, line };
 
@@ -364,11 +364,15 @@ function ifAnalysis() {
     SemanticAnalysis.changeInsideIf(false);
 
     if (SyntacticValidation.elseIfValidation(tokenList[index])) {
+      SemanticAnalysis.changeInsideElse(true);
+
       lerToken();
       
       simpleCommandAnalysis();
     }
   }
+  SemanticAnalysis.changeInsideElse(false);
+
 }
 
 function whileAnalysis() {

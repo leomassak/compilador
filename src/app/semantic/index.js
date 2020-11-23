@@ -31,7 +31,7 @@ export let symbolTable = [];
 export let posFixExpression = [];
 export let posFixStack = [];
 export let posFixLevel = 0;
-export let expressionIsTrue = false;
+// export let expressionIsTrue = false;
 
 let level = 1; // escopo
 
@@ -49,6 +49,8 @@ export let functionPile = [];
 
 export let insideIF = false;
 
+export let insideELSE = false;
+
 export const changeReturnedFunction = (type) => {
   returnedFunction = type;
 }
@@ -62,6 +64,8 @@ export const resetInFunctionPile = () => functionPile = [];
 export const checkFunctionReturn = (token) => functionPile[functionPile.length - 1].lexeme === token;
 
 export const changeInsideIf = (boolean) => insideIF = boolean;
+
+export const changeInsideElse = (boolean) => insideELSE = boolean;
 
 // ------------------------------------------------------ TABELA DE SÍMBOLOS ------------------------------------------------------------
 
@@ -245,8 +249,8 @@ export function posFixAnalisys() {
   // console.log('ANTES: expressão posfix:', JSON.stringify(posFixExpression));
   let hasOperations = true;
   let index = 0;
-  if (posFixExpression.length === 1 && posFixExpression[0].lexeme === 'verdadeiro') expressionIsTrue = true;
-  else expressionIsTrue = false;
+  // if (posFixExpression.length === 1 && posFixExpression[0].lexeme === 'verdadeiro') expressionIsTrue = true;
+  // else expressionIsTrue = false;
 
   do {
     const isOperator = posFixPrecedence.find((item) => item.lexeme === posFixExpression[index].lexeme)
