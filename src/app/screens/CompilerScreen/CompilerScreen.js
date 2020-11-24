@@ -1,8 +1,17 @@
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useState } from 'react';
+/*eslint-disable no-alert, no-console */
+
+import React, { useState, useEffect, useRef } from 'react';
+import AceEditor from "react-ace";
+
+import "ace-builds/src-noconflict/mode-text";
+import "ace-builds/src-noconflict/ext-language_tools"
+import "ace-builds/src-min-noconflict/ext-searchbox";
+import "ace-builds/src-noconflict/mode-jsx";
 
 import './styles.scss';
+
 import { pegaToken } from '../../functions/pegaToken';
 import * as SyntacticAnalysis from '../../syntactical/analisys';
 import * as SemanticAnalysis from '../../semantic';
@@ -13,6 +22,27 @@ function CompilerScreen() {
   const [syntacticErrorIndex, setSyntacticErrorIndex] = useState(-1);
   const [syntacticError, setSyntacticError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [lpd, setLpd] = useState('');
+  const [running, setRunning] = useState(false);
+  const [selected, setSelected] = useState(0);
+  const [annotation, setAnnotation] = useState([]);
+  const [theme, setTheme] = useState('dracula');
+  const [showThemeDropDown, setShowThemeDropDown] = useState(false);
+
+  const themes = [
+  "dracula",
+  "monokai",
+  "github",
+  "tomorrow",
+  "kuroir",
+  "twilight",
+  "xcode",
+  "textmate",
+  "solarized_dark",
+  "solarized_light",
+];
+
+themes.forEach((theme) => require(`ace-builds/src-noconflict/theme-${theme}`));
 
   const ESPECIAL_COMMANDS = {
     SKIP_LINE: '\n',
@@ -28,6 +58,36 @@ function CompilerScreen() {
     SLASH: 1,
     KEY: 2,
   };
+
+
+  function runCode() {
+    if(lpd.length > 0) {
+      stopRun();
+      const list = lexicalAnalysis(lpd);
+      syntacticAnalysis(list); 
+      setTokenList(list);
+      setDisplayList(true);
+      setRunning(true);
+    }
+  }
+
+  function stopRun() {
+    setTokenList([]);
+    setAnnotation([]);
+    setDisplayList(false)
+    setSyntacticErrorIndex(-1);
+    setSelected(0);
+    setSyntacticError('');
+    setSuccess(false);
+    setRunning(false);
+    SemanticAnalysis.resetSymbolTable();
+    SemanticAnalysis.resetPosFix();
+    SemanticAnalysis.resetInFunctionPile();
+    SemanticAnalysis.changeInsideIf(false);
+    SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_A_FUNCTION);
+    SyntacticAnalysis.reset();
+    console.clear();
+  }
 
   function lexicalAnalysis(file) {
     let line = 1;
@@ -107,6 +167,7 @@ function CompilerScreen() {
     } catch (err) {
       setSyntacticError(err.message);
       setSyntacticErrorIndex(SyntacticAnalysis.index);
+      setAnnotation([{ row: SyntacticAnalysis.line - 1, column: 0, type: 'error', text: err.message}])
     }
   }
 
@@ -118,55 +179,18 @@ function CompilerScreen() {
         event.target.value = '';
       }
       reader.onload = async (e) => {
-        handleFileRemove();
+        stopRun();
         const file = e.target.result;
-        const list = await lexicalAnalysis(file);
-        await syntacticAnalysis(list);
-        setTokenList(list);
-        setDisplayList(true);
+        setLpd(file);
       };
     } else alert('Este tipo de arquivo não é suportado!');
   }
 
-  async function handleFileRemove() {
-    setTokenList([]);
-    setDisplayList(false)
-    setSyntacticErrorIndex(-1);
-    setSyntacticError('');
-    setSuccess(false);
-    SemanticAnalysis.resetSymbolTable();
-    SemanticAnalysis.resetPosFix();
-    SemanticAnalysis.changeInsideFunction(false);
-    SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_A_FUNCTION);
-    SyntacticAnalysis.reset();
-    console.clear();
-  }
-
-  return (
-    <div className="panel">
-      <div className="header-panel">
-        <ul>
-          <li>
-            <input
-              type="file"
-              name="Arquivo"
-              id="file-button"
-              onChange={handleFileSelector}
-            />
-            <label htmlFor="file-button">Inserir Arquivo</label>
-          </li>
-          <li>
-            <button
-              type="button"
-              onClick={handleFileRemove}
-            >
-              Limpar
-            </button>
-          </li>
-        </ul>
-      </div>
-      <div className="main-panel">
-        {displayList && tokenList.map((item, index) => (
+  function getLog() {
+    if (selected === 0) {
+      return (
+        <>
+           {displayList && tokenList.map((item, index) => (
           <>
             {(syntacticErrorIndex === -1 || index < syntacticErrorIndex) && (
               <>
@@ -179,20 +203,6 @@ function CompilerScreen() {
                       {`Erro -> ${item.lexeme}`}
                       <br />
                     </p>
-                  </>
-                )}
-                {item.symbol !== 'Erro' && (
-                  <>
-                    <p className="panel-text-lines">
-                      {`Linha -> ${item.line}`}
-                    </p>
-                    <p className="panel-text-lines">
-                      {`Símbolo -> ${item.symbol}`}
-                    </p>
-                    <p className="panel-text-lines">
-                      {`Lexema -> ${item.lexeme}`}
-                    </p>
-                    <br />
                   </>
                 )}
               </>
@@ -209,8 +219,139 @@ function CompilerScreen() {
             Compilado com sucesso!
           </p>
         )}
+        </>
+      )
+    } else {
+      return (
+        <>
+        {displayList && tokenList.map((item, index) => (
+          <>
+            {item.symbol !== 'Erro' && index < syntacticErrorIndex && (
+            <>
+              <p className="panel-text-lines">
+                {`Linha -> ${item.line}`}
+              </p>
+              <p className="panel-text-lines">
+                {`Símbolo -> ${item.symbol}`}
+              </p>
+              <p className="panel-text-lines">
+                {`Lexema -> ${item.lexeme}`}
+              </p>
+              <br />
+            </>
+            )}
+          </>
+        ))}
+        </>
+      )
+    }
+  }
+
+  function toggleDropDown() {
+    setShowThemeDropDown(prevState => !prevState);
+  }
+
+  function handleTheme(theme) {
+    setTheme(theme);
+    toggleDropDown();
+  }
+
+  return (
+    <>
+    <nav>
+         <div className="header-panel">
+           <ul>
+             <li>
+               <input
+                type="file"
+                name="Arquivo"
+                id="file-button"
+                onChange={handleFileSelector}
+              />
+              <label htmlFor="file-button">Arquivo</label>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={runCode}
+                className="header-button"
+              >
+                Compilar
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={stopRun}
+                className="header-button"
+              >
+                Finalizar
+              </button>
+            </li>
+            <li className="button-container">
+              <button
+                type="button"
+                onClick={toggleDropDown}
+                className="header-button"
+              >
+                Tema
+              </button>
+              {showThemeDropDown && (
+                <div className="theme-dropdown">
+                  {themes.map((theme) => (
+                    <span className="theme-button" onClick={() => handleTheme(theme)}>{theme}</span>
+                  ))}
+                </div>
+              )}
+            </li>
+          </ul>
+        </div>
+      </nav>
+    <div id="container">
+    <div id="code">
+        <section id="lpdmixed">
+          <AceEditor
+          mode="text"
+          theme={theme}
+          className="editor-style"
+          fontSize={14}
+          width={'100%'}
+          height={'92vh'}
+          value={lpd}
+          annotations={annotation}  
+          onChange={(value) => setLpd(value)}
+          name="ace-editor"
+          editorProps={{ $blockScrolling: true }}
+          setOptions={{
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true,
+            enableSnippets: true,
+            showLineNumbers: true,
+            showPrintMargin: false,
+            readOnly: running,
+          }}
+        />
+        </section>
+        {running && (
+          <section id="console">
+          <div className="console-container">
+            <div className="tab-container">
+              <div className={`console-tab ${selected === 0 && 'tab-selected'}`} onClick={() => setSelected(0)}>
+                <span >Console</span>
+              </div>
+              <div className={`console-tab ${selected === 1 && 'tab-selected'}`} onClick={() => setSelected(1)}>
+                <span >Tokens</span>
+              </div>
+            </div>
+            <div className="console-logs">
+              {getLog()}
+            </div>
+          </div>
+       </section>
+        )}
       </div>
     </div>
+    </>
   );
 }
 
