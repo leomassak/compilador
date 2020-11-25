@@ -107,7 +107,7 @@ function functionDeclarationAnalysis() {
   SemanticAnalysis.insertInSymbolTable(tokenList[index].lexeme, SemanticAnalysis.TokenType.FUNCTION)
   SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_RETURNED);
   SemanticAnalysis.addInFunctionPile({ lexeme: tokenList[index].lexeme, tokenFunc: SemanticAnalysis.TokenType.FUNCTION });
-  console.log('functionPile', SemanticAnalysis.functionPile);
+  // console.log('functionPile', SemanticAnalysis.functionPile);
 
   lerToken();
 
@@ -166,6 +166,7 @@ function expressionAnalysis() {
     simpleExpressionAnalysis();
   }
 
+  console.log('saiu!');
   if (SemanticAnalysis.posFixLevel === 0) {
     SemanticAnalysis.posFixStack.slice().reverse().forEach((item) => {
       if (item.lexeme !== '(' && item.lexeme !== ')') SemanticAnalysis.posFixExpression.push(item)
@@ -276,7 +277,7 @@ export function functionCallAnalisys() {
 export function assignmentAnalysis() {
   const identifier = tokenList[index - 1];
 
-  const changeReturnedFunction = !SemanticAnalysis.insideIF || SemanticAnalysis.insideELSE;
+  const changeReturnedFunction = (!SemanticAnalysis.insideIF && !SemanticAnalysis.insideELSE) || (SemanticAnalysis.insideIF && SemanticAnalysis.insideELSE);
   
   const isFunction = { response: SemanticAnalysis.searchDeclarationFunction(identifier.lexeme), index, line };
 
@@ -312,6 +313,8 @@ export function assignmentAnalysis() {
     console.log('Retorno da função');
     if (changeReturnedFunction) SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.RETURNED);
   } else if (isVariable.response) {
+    SemanticAnalysis.changeInsideIf(false);
+    SemanticAnalysis.changeInsideElse(false);
 
     if (isVariable.response.tokenType === 'booleano') {
       if (SemanticAnalysis.posFixExpression === 'inteiro')
@@ -346,22 +349,22 @@ function assignmentOrProcedureAnalysis() {
 
 function ifAnalysis() {
   lerToken();
-  console.log('ENTROU NO IF')
-  SemanticAnalysis.changeInsideIf(true);
+
 
   expressionAnalysis();
-  console.log('CONDIÇÃO DO IF É:', SemanticAnalysis.posFixExpression);
+  // console.log('CONDIÇÃO DO IF É:', SemanticAnalysis.posFixExpression);
   if (SemanticAnalysis.posFixExpression !== 'booleano')
     throw new Error(`Erro - Linha ${line}: Condição do comando "se" não pode ser do tipo inteiro`);
 
   SemanticAnalysis.resetPosFix();
 
   if (SyntacticValidation.elseValidation(tokenList[index])) {
+    // console.log('ENTROU NO IF')
+    SemanticAnalysis.changeInsideIf(true);
+
     lerToken();
 
     simpleCommandAnalysis();
-
-    SemanticAnalysis.changeInsideIf(false);
 
     if (SyntacticValidation.elseIfValidation(tokenList[index])) {
       SemanticAnalysis.changeInsideElse(true);
@@ -371,7 +374,6 @@ function ifAnalysis() {
       simpleCommandAnalysis();
     }
   }
-  SemanticAnalysis.changeInsideElse(false);
 
 }
 

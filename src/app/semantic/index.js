@@ -205,6 +205,9 @@ export function resetPosFix() {
 
 export function verifyPrecedence(newToken) {
   const index = SyntacticalAnalysis.index;
+  console.log('ANTES: expressão posfix:', JSON.stringify(posFixExpression));
+  console.log('ANTES: pilha posfix:', JSON.stringify(posFixStack));
+  console.log('ANTES: novo token:', SyntacticalAnalysis.tokenList[index]);
 
   if (posFixStack.length === 0 && SyntacticalAnalysis.tokenList[index].lexeme !== '(' && SyntacticalAnalysis.tokenList[index].lexeme !== ')') {
     posFixStack.push(newToken || SyntacticalAnalysis.tokenList[index])
@@ -213,6 +216,7 @@ export function verifyPrecedence(newToken) {
     posFixStack.push(SyntacticalAnalysis.tokenList[index]);
   }
   else if (SyntacticalAnalysis.tokenList[index].lexeme === ')') {
+    console.log('entrou');
     let shouldSkip = false;
     let newPosFixStack = [];
     posFixStack.slice().reverse().forEach((item) => {
@@ -220,8 +224,9 @@ export function verifyPrecedence(newToken) {
       else if (!shouldSkip) posFixExpression.push(item);
       else newPosFixStack.push(item);
     });
-    console.log('newPosFixStack', newPosFixStack);
+    // console.log('newPosFixStack', newPosFixStack);
     posFixStack = newPosFixStack.reverse();
+    console.log('saiu');
   } else {
     const actualTokenOrder = (posFixStack[posFixStack.length - 1].lexeme === '(' || posFixStack[posFixStack.length - 1].lexeme === ')')
       ? 0 : posFixPrecedence.find((item) => item.lexeme === posFixStack[posFixStack.length - 1].lexeme).order;
@@ -242,6 +247,9 @@ export function verifyPrecedence(newToken) {
       posFixStack.push(newToken || SyntacticalAnalysis.tokenList[index]);
     }
   }
+  console.log('DEPOIS: expressão posfix:', JSON.stringify(posFixExpression));
+  console.log('DEPOIS: pilha posfix:', JSON.stringify(posFixStack));
+  console.log('DEPOIS: novo token:', SyntacticalAnalysis.tokenList[index + 1]);
 }
 
 export function posFixAnalisys() {
@@ -257,6 +265,9 @@ export function posFixAnalisys() {
     if (isOperator) {
       const operatorIndex = posFixExpression.findIndex((item) => item.lexeme === isOperator.lexeme);
       const firstToken = posFixExpression[operatorIndex - isOperator.read];
+
+      if (!firstToken || !operatorIndex)
+        throw new Error(`Erro - Linha ${SyntacticalAnalysis.line}: Expressão inválida`);
       if (isOperator.read > 1) {
         const secondToken = posFixExpression[operatorIndex - isOperator.read + 1];
         operationAnalysis(isOperator, firstToken, secondToken, operatorIndex);
