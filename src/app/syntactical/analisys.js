@@ -380,6 +380,8 @@ function ifAnalysis() {
       simpleCommandAnalysis();
     }
   }
+  SemanticAnalysis.changeInsideIf(false);
+  SemanticAnalysis.changeInsideElse(false);
 
 }
 
