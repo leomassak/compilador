@@ -10,6 +10,8 @@ export const reset = () => {
   line = 0;
 }
 
+export const changeLine = (newline) => line = newline;
+
 function lerToken() {
   index += 1;
   if (tokenList.length <= index) throw new Error(`Erro - Linha ${line}: Arquivo chegou no fim, porém não foi encontrado o ponto`);
@@ -166,7 +168,6 @@ function expressionAnalysis() {
     simpleExpressionAnalysis();
   }
 
-  console.log('saiu!');
   if (SemanticAnalysis.posFixLevel === 0) {
     SemanticAnalysis.posFixStack.slice().reverse().forEach((item) => {
       if (item.lexeme !== '(' && item.lexeme !== ')') SemanticAnalysis.posFixExpression.push(item)
@@ -317,11 +318,15 @@ export function assignmentAnalysis() {
     SemanticAnalysis.changeInsideElse(false);
 
     if (isVariable.response.tokenType === 'booleano') {
-      if (SemanticAnalysis.posFixExpression === 'inteiro')
+      if (SemanticAnalysis.posFixExpression === 'inteiro') {
+        changeLine(isVariable.line);
         throw new Error(`Erro - Linha ${isVariable.line}: A variável ${isVariable.response.token} não pode receber um valor inteiro`);
+      }
     } else {
-      if (SemanticAnalysis.posFixExpression === 'booleano')
+      if (SemanticAnalysis.posFixExpression === 'booleano') {
+        changeLine(isVariable.line);
         throw new Error(`Erro - Linha ${isVariable.line}: A variável ${isVariable.response.token} não pode receber um valor booleano`);
+      }
     }
   } else throw new Error(`Erro - Linha ${line}: O identificador que está recebendo a atribuição não é nem uma função nem uma variável`);
   
@@ -350,11 +355,12 @@ function assignmentOrProcedureAnalysis() {
 function ifAnalysis() {
   lerToken();
 
-
   expressionAnalysis();
   // console.log('CONDIÇÃO DO IF É:', SemanticAnalysis.posFixExpression);
-  if (SemanticAnalysis.posFixExpression !== 'booleano')
+  if (SemanticAnalysis.posFixExpression !== 'booleano') {
+    changeLine(tokenList[index - 1].line);
     throw new Error(`Erro - Linha ${line}: Condição do comando "se" não pode ser do tipo inteiro`);
+  }
 
   SemanticAnalysis.resetPosFix();
 
@@ -382,8 +388,10 @@ function whileAnalysis() {
 
   expressionAnalysis();
 
-  if (SemanticAnalysis.posFixExpression !== 'booleano')
+  if (SemanticAnalysis.posFixExpression !== 'booleano') {
+    changeLine(tokenList[index - 1].line);
     throw new Error(`Erro - Linha ${line}: Condição do comando "enquanto" não pode ser do tipo inteiro`);
+  }
 
   SemanticAnalysis.resetPosFix();
 

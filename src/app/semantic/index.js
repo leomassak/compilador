@@ -216,7 +216,6 @@ export function verifyPrecedence(newToken) {
     posFixStack.push(SyntacticalAnalysis.tokenList[index]);
   }
   else if (SyntacticalAnalysis.tokenList[index].lexeme === ')') {
-    console.log('entrou');
     let shouldSkip = false;
     let newPosFixStack = [];
     posFixStack.slice().reverse().forEach((item) => {
@@ -226,7 +225,6 @@ export function verifyPrecedence(newToken) {
     });
     // console.log('newPosFixStack', newPosFixStack);
     posFixStack = newPosFixStack.reverse();
-    console.log('saiu');
   } else {
     const actualTokenOrder = (posFixStack[posFixStack.length - 1].lexeme === '(' || posFixStack[posFixStack.length - 1].lexeme === ')')
       ? 0 : posFixPrecedence.find((item) => item.lexeme === posFixStack[posFixStack.length - 1].lexeme).order;
@@ -249,7 +247,7 @@ export function verifyPrecedence(newToken) {
   }
   console.log('DEPOIS: expressão posfix:', JSON.stringify(posFixExpression));
   console.log('DEPOIS: pilha posfix:', JSON.stringify(posFixStack));
-  console.log('DEPOIS: novo token:', SyntacticalAnalysis.tokenList[index + 1]);
+  console.log('DEPOIS: novo token:', SyntacticalAnalysis.tokenList[index]);
 }
 
 export function posFixAnalisys() {
@@ -292,38 +290,46 @@ export function posFixAnalisys() {
 function unaryOperationAnalysis(unaryOperation, token, index) {
   if (unaryOperation.type === 'inteiro') {
     if (!checkInteger(token)) throw new Error(`Erro - Linha ${token.line}: A operação "${unaryOperation.lexeme}" não pode ser feita com um valor booleano`);
-    transformExpressionArray(unaryOperation, unaryOperation.return, index)
+    transformExpressionArray(unaryOperation, unaryOperation.return, index, token)
   } else {
     if (!checkBoolean(token)) throw new Error(`Erro - Linha ${token.line}: A operação "${unaryOperation.lexeme}" não pode ser feita com um valor inteiro`);
-    transformExpressionArray(unaryOperation, unaryOperation.return, index)
+    transformExpressionArray(unaryOperation, unaryOperation.return, index, token)
   }
 }
 
 function operationAnalysis(operation, firsToken, secondToken, index) {
   if (operation.type === 'inteiro') {
-    if (!checkInteger(firsToken)) throw new Error(`Erro - Linha ${firsToken.line}: A operação "${operation.lexeme}" não pode ser feita com um valor booleano`);
-    if (!checkInteger(secondToken)) throw new Error(`Erro - Linha ${secondToken.line}: A operação "${operation.lexeme}" não pode ser feita com um valor booleano`);
+    if (!checkInteger(firsToken)) throwOperationError(operation, firsToken, 'booleano');
+    if (!checkInteger(secondToken)) throwOperationError(operation, secondToken, 'booleano');
 
-    transformExpressionArray(operation, operation.return, index)
+    transformExpressionArray(operation, operation.return, index, secondToken)
   } else if (operation.type === 'booleano') {
-    if (!checkBoolean(firsToken)) throw new Error(`Erro - Linha ${firsToken.line}: A operação "${operation.lexeme}" não pode ser feita com um valor inteiro`);
-    if (!checkBoolean(secondToken)) throw new Error(`Erro - Linha ${secondToken.line}: A operação "${operation.lexeme}" não pode ser feita com um valor inteiro`);
+    if (!checkBoolean(firsToken)) throwOperationError(operation, firsToken, 'inteiro');
+    if (!checkBoolean(secondToken)) throwOperationError(operation, secondToken, 'inteiro');
 
-    transformExpressionArray(operation, operation.return, index)
+    transformExpressionArray(operation, operation.return, index, secondToken)
   } else {
     if (checkInteger(firsToken) && checkInteger(secondToken)) {
-      transformExpressionArray(operation, operation.return, index)
+      transformExpressionArray(operation, operation.return, index, secondToken)
     }
     else if (checkBoolean(firsToken) && checkBoolean(secondToken)) {
-      transformExpressionArray(operation, operation.return, index)
+      transformExpressionArray(operation, operation.return, index, secondToken)
     }
-    else throw new Error(`Erro - Linha ${firsToken.line}: Os tokens "${firsToken.lexeme}" e "${secondToken.lexeme}" possuem tipos diferentes`);
+    else {
+      SyntacticalAnalysis.changeLine(secondToken.line);
+      throw new Error(`Erro - Linha ${firsToken.line}: Os tokens "${firsToken.lexeme}" e "${secondToken.lexeme}" possuem tipos diferentes`);
+    }
   }
 }
 
-function transformExpressionArray(operation, type, index) {
+function throwOperationError(operation, token, type) {
+  SyntacticalAnalysis.changeLine(token.line);
+  throw new Error(`Erro - Linha ${token.line}: A operação "${operation.lexeme}" não pode ser feita com um valor ${type}`);
+}
+
+function transformExpressionArray(operation, type, index, token) {
   // console.log('transformExpressionArray', operation, type, index);
-  posFixExpression.splice(index - operation.read, operation.read + 1, { symbol: `s${type}`, lexeme: type, line: SyntacticalAnalysis.line });
+  posFixExpression.splice(index - operation.read, operation.read + 1, { symbol: `s${type}`, lexeme: type, line: token.line });
   // console.log('após transformExpressionArray', posFixExpression);
 }
 
