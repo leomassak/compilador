@@ -264,8 +264,10 @@ export function posFixAnalisys() {
       const operatorIndex = posFixExpression.findIndex((item) => item.lexeme === isOperator.lexeme);
       const firstToken = posFixExpression[operatorIndex - isOperator.read];
 
-      if (!firstToken || !operatorIndex)
+      if (!firstToken || !operatorIndex) {
+        posFixExpression.length > 0 && SyntacticalAnalysis.changeLine(posFixExpression[posFixExpression.length - 1].line);
         throw new Error(`Erro - Linha ${SyntacticalAnalysis.line}: Expressão inválida`);
+      }
       if (isOperator.read > 1) {
         const secondToken = posFixExpression[operatorIndex - isOperator.read + 1];
         operationAnalysis(isOperator, firstToken, secondToken, operatorIndex);
