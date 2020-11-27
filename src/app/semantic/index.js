@@ -231,6 +231,8 @@ export function verifyPrecedence(newToken) {
     });
     // console.log('newPosFixStack', newPosFixStack);
     posFixStack = newPosFixStack.reverse();
+  } else if (SyntacticalAnalysis.tokenList[index].lexeme === 'nao' && posFixStack[posFixStack.length - 1].lexeme === 'nao') {
+    posFixStack.push(SyntacticalAnalysis.tokenList[index]);
   } else {
     const actualTokenOrder = (posFixStack[posFixStack.length - 1].lexeme === '(' || posFixStack[posFixStack.length - 1].lexeme === ')')
       ? 0 : posFixPrecedence.find((item) => item.lexeme === posFixStack[posFixStack.length - 1].lexeme).order;

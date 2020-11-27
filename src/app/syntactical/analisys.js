@@ -307,12 +307,6 @@ export function assignmentAnalysis() {
         throw new Error(`Erro - Linha ${isFunction.line}: O retorno da função ${isFunction.response.token} não pode ser um valor booleano`);
     }
 
-    // console.log('line', line);
-    // console.log('SemanticAnalysis.insideIF', SemanticAnalysis.insideIF);
-    // console.log('SemanticAnalysis.returnedFunction', SemanticAnalysis.returnedFunction);
-    // if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.RETURNED)
-    //   throw new Error(`Erro - Linha ${line}: Função já possui um retorno`);
-    console.log('Retorno da função');
     if (changeReturnedFunction) SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.RETURNED);
   } else if (isVariable.response) {
     SemanticAnalysis.changeInsideIf(SemanticAnalysis.insideIF === 0 ? 0 : SemanticAnalysis.insideIF - 1);
