@@ -47,9 +47,9 @@ export let returnedFunction = BlockEnum.NOT_A_FUNCTION;
 
 export let functionPile = [];
 
-export let insideIF = false;
+export let insideIF = 0;
 
-export let insideELSE = false;
+export let insideELSE = 0;
 
 export const changeReturnedFunction = (type) => {
   returnedFunction = type;
@@ -63,9 +63,15 @@ export const resetInFunctionPile = () => functionPile = [];
 
 export const checkFunctionReturn = (token) => functionPile[functionPile.length - 1].lexeme === token;
 
-export const changeInsideIf = (boolean) => insideIF = boolean;
+export const changeInsideIf = (number) => {
+  console.log('numberIf', number);
+  insideIF = number
+};
 
-export const changeInsideElse = (boolean) => insideELSE = boolean;
+export const changeInsideElse = (number) => {
+  console.log('numberElse', number);
+  insideELSE = number
+};
 
 // ------------------------------------------------------ TABELA DE SÍMBOLOS ------------------------------------------------------------
 

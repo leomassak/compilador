@@ -278,7 +278,8 @@ export function functionCallAnalisys() {
 export function assignmentAnalysis() {
   const identifier = tokenList[index - 1];
 
-  const changeReturnedFunction = (!SemanticAnalysis.insideIF && !SemanticAnalysis.insideELSE) || (SemanticAnalysis.insideIF && SemanticAnalysis.insideELSE);
+  const changeReturnedFunction = (SemanticAnalysis.insideIF === 0 && SemanticAnalysis.insideELSE === 0)
+    || (SemanticAnalysis.insideIF === 1 && SemanticAnalysis.insideELSE === 1);
   
   const isFunction = { response: SemanticAnalysis.searchDeclarationFunction(identifier.lexeme), index, line };
 
@@ -314,8 +315,8 @@ export function assignmentAnalysis() {
     console.log('Retorno da função');
     if (changeReturnedFunction) SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.RETURNED);
   } else if (isVariable.response) {
-    SemanticAnalysis.changeInsideIf(false);
-    SemanticAnalysis.changeInsideElse(false);
+    SemanticAnalysis.changeInsideIf(SemanticAnalysis.insideIF === 0 ? 0 : SemanticAnalysis.insideIF - 1);
+    SemanticAnalysis.changeInsideElse(SemanticAnalysis.insideELSE === 0 ? 0 : SemanticAnalysis.insideELSE - 1);
 
     if (isVariable.response.tokenType === 'booleano') {
       if (SemanticAnalysis.posFixExpression === 'inteiro') {
@@ -366,22 +367,22 @@ function ifAnalysis() {
 
   if (SyntacticValidation.elseValidation(tokenList[index])) {
     // console.log('ENTROU NO IF')
-    SemanticAnalysis.changeInsideIf(true);
+    SemanticAnalysis.changeInsideIf(SemanticAnalysis.insideIF + 1);
 
     lerToken();
 
     simpleCommandAnalysis();
 
     if (SyntacticValidation.elseIfValidation(tokenList[index])) {
-      SemanticAnalysis.changeInsideElse(true);
+      SemanticAnalysis.changeInsideElse(SemanticAnalysis.insideELSE + 1);
 
       lerToken();
       
       simpleCommandAnalysis();
     }
   }
-  SemanticAnalysis.changeInsideIf(false);
-  SemanticAnalysis.changeInsideElse(false);
+  SemanticAnalysis.changeInsideIf(SemanticAnalysis.insideIF === 0 ? 0 : SemanticAnalysis.insideIF - 1);
+  SemanticAnalysis.changeInsideElse(SemanticAnalysis.insideELSE === 0 ? 0 : SemanticAnalysis.insideELSE - 1);
 
 }
 
