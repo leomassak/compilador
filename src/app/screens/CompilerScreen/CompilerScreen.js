@@ -15,6 +15,7 @@ import './styles.scss';
 import { pegaToken } from '../../functions/pegaToken';
 import * as SyntacticAnalysis from '../../syntactical/analisys';
 import * as SemanticAnalysis from '../../semantic';
+import * as CodeGeneration from '../../codeGeneration';
 
 function CompilerScreen() {
   const [tokenList, setTokenList] = useState([]);
@@ -87,6 +88,7 @@ themes.forEach((theme) => require(`ace-builds/src-noconflict/theme-${theme}`));
     SemanticAnalysis.changeInsideElse(0);
     SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_A_FUNCTION);
     SyntacticAnalysis.reset();
+    CodeGeneration.resetProgram();
     console.clear();
   }
 
@@ -227,7 +229,7 @@ themes.forEach((theme) => require(`ace-builds/src-noconflict/theme-${theme}`));
         <>
         {displayList && tokenList.map((item, index) => (
           <>
-            {item.symbol !== 'Erro' && index < syntacticErrorIndex && (
+            {(success || (item.symbol !== 'Erro' && index < syntacticErrorIndex)) && (
             <>
               <p className="panel-text-lines">
                 {`Linha -> ${item.line}`}
