@@ -69,6 +69,7 @@ themes.forEach((theme) => require(`ace-builds/src-noconflict/theme-${theme}`));
       setTokenList(list);
       setDisplayList(true);
       setRunning(true);
+      download('codigo_gerado.txt', CodeGeneration.code);
     }
   }
 
@@ -161,6 +162,24 @@ themes.forEach((theme) => require(`ace-builds/src-noconflict/theme-${theme}`));
 
     if (isComment) list = list.concat({ symbol: 'Erro', lexeme: `O comentário não foi fechado`, line: line - commentLines });
     return list;
+  }
+
+  function download(filename, text) {
+    var file = new Blob([text], { type: "text/plain;charset=utf-8" });
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+      window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+      var a = document.createElement("a"),
+        url = URL.createObjectURL(file);
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 0);
+    }
   }
 
   function syntacticAnalysis(lexicalTokenList) {
