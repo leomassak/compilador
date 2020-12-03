@@ -69,7 +69,6 @@ themes.forEach((theme) => require(`ace-builds/src-noconflict/theme-${theme}`));
       setTokenList(list);
       setDisplayList(true);
       setRunning(true);
-      download('codigo_gerado.txt', CodeGeneration.code);
     }
   }
 
@@ -186,6 +185,7 @@ themes.forEach((theme) => require(`ace-builds/src-noconflict/theme-${theme}`));
     try {
       SyntacticAnalysis.initSyntacticalAnalisys(lexicalTokenList);
       setSuccess(true);
+      download('codigo_gerado.txt', CodeGeneration.code);
     } catch (err) {
       setSyntacticError(err.message);
       setSyntacticErrorIndex(SyntacticAnalysis.index);

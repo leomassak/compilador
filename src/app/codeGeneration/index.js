@@ -71,4 +71,7 @@ export const assignment = (variablePosition, comment) => {
 
 export const consoleProgram = () => console.log(code);
 
-export const resetProgram = () => code = '';
+export const resetProgram = () => {
+  code = '';
+  allocatedSpace = 0;
+}
