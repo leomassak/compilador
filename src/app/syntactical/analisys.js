@@ -305,9 +305,6 @@ export function functionCallAnalisys() {
 
 export function assignmentAnalysis() {
   const identifier = tokenList[index - 1];
-
-  const changeReturnedFunction = (SemanticAnalysis.insideIF === 0 && SemanticAnalysis.insideELSE === 0)
-    || (SemanticAnalysis.insideIF === 1 && SemanticAnalysis.insideELSE === 1);
   
   const isFunction = { response: SemanticAnalysis.searchDeclarationFunction(identifier.lexeme), index, line };
 
@@ -336,11 +333,8 @@ export function assignmentAnalysis() {
     }
 
     CodeGeneration.assignment(0, 'Resposta da função');
-    if (changeReturnedFunction) SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.RETURNED);
+    SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.RETURNED);
   } else if (isVariable.response) {
-    SemanticAnalysis.changeInsideIf(SemanticAnalysis.insideIF === 0 ? 0 : SemanticAnalysis.insideIF - 1);
-    SemanticAnalysis.changeInsideElse(SemanticAnalysis.insideELSE === 0 ? 0 : SemanticAnalysis.insideELSE - 1);
-
     if (isVariable.response.tokenType === 'booleano') {
       if (SemanticAnalysis.posFixExpression === 'inteiro') {
         changeLine(isVariable.line);
@@ -397,11 +391,24 @@ function ifAnalysis() {
   CodeGeneration.JMPF(auxLabel, 'Se falso vai para o fim do ifAnalysis ou para o else');
   if (SyntacticValidation.elseValidation(tokenList[index])) {
     // console.log('ENTROU NO IF')
-    SemanticAnalysis.changeInsideIf(SemanticAnalysis.insideIF + 1);
 
     lerToken();
 
     simpleCommandAnalysis();
+
+    console.log('LINE', line);
+    console.log('Saiu do IF');
+    console.log('RET', SemanticAnalysis.returnedFunction);
+    console.log('RET_AUX', SemanticAnalysis.returnedFunctionAux);
+
+    if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.NOT_RETURNED)
+      SemanticAnalysis.changeAuxReturnedFunction(SemanticAnalysis.BlockEnum.RETURNED)
+    
+    SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_RETURNED)
+
+    console.log('APOS VALIDAÇÃO DO IF');
+    console.log('RET', SemanticAnalysis.returnedFunction);
+    console.log('RET_AUX', SemanticAnalysis.returnedFunctionAux);
 
     if (SyntacticValidation.elseIfValidation(tokenList[index])) {
       auxLabel2 = label;
@@ -409,15 +416,22 @@ function ifAnalysis() {
       CodeGeneration.JMP(auxLabel2, 'Se finalizou o if vai para o fim');
       CodeGeneration.callNull(auxLabel, 'Entrou no else');
 
-      SemanticAnalysis.changeInsideElse(SemanticAnalysis.insideELSE + 1);
-
       lerToken();
       
       simpleCommandAnalysis();
+
+      console.log('Saiu do ELSE');
+      console.log('RET', SemanticAnalysis.returnedFunction);
+      console.log('RET_AUX', SemanticAnalysis.returnedFunctionAux);
+
+      if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.RETURNED && SemanticAnalysis.returnedFunctionAux === SemanticAnalysis.BlockEnum.RETURNED)
+        SemanticAnalysis.changeReturnedFunction(SemanticAnalysis.BlockEnum.NOT_RETURNED)
+
+      console.log('APOS VALIDAÇÃO DO ELSE');
+      console.log('RET', SemanticAnalysis.returnedFunction);
+      console.log('RET_AUX', SemanticAnalysis.returnedFunctionAux);
     }
   }
-  SemanticAnalysis.changeInsideIf(SemanticAnalysis.insideIF === 0 ? 0 : SemanticAnalysis.insideIF - 1);
-  SemanticAnalysis.changeInsideElse(SemanticAnalysis.insideELSE === 0 ? 0 : SemanticAnalysis.insideELSE - 1);
   CodeGeneration.callNull((auxLabel2 || auxLabel), 'Saiu do ifAnalysis');
 }
 
@@ -504,6 +518,9 @@ function writeAnalysis() {
 }
 
 function simpleCommandAnalysis() {
+  if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.RETURNED)
+    throw new Error(`Erro - Linha ${line}: Encontrado comando após o retorno da função!`);
+
   if (SyntacticValidation.identifierValidation(tokenList[index])) assignmentOrProcedureAnalysis();
 
   else if (SyntacticValidation.ifValidation(tokenList[index])) ifAnalysis();
@@ -522,9 +539,6 @@ function commandAnalysis() {
     throw new Error(`Erro - Linha ${line}: Esperado inicio, porem encontrado ${tokenList[index].lexeme}`);
 
   lerToken();
-
-  if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.RETURNED) 
-    throw new Error(`Erro - Linha ${line}: Encontrado comando após o retorno da função!`);
   
   simpleCommandAnalysis();
 
@@ -535,8 +549,6 @@ function commandAnalysis() {
     lerToken();
 
     if (!SyntacticValidation.endValidation(tokenList[index])) {
-      if (SemanticAnalysis.returnedFunction === SemanticAnalysis.BlockEnum.RETURNED)
-        throw new Error(`Erro - Linha ${line}: Encontrado comando após o retorno da função!`);
 
       simpleCommandAnalysis();
     }

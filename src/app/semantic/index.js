@@ -47,14 +47,20 @@ export const BlockEnum = {
 
 export let returnedFunction = BlockEnum.NOT_A_FUNCTION;
 
+export let returnedFunctionAux = BlockEnum.NOT_RETURNED;
+
 export let functionPile = [];
 
-export let insideIF = 0;
+// export let insideIF = 0;
 
-export let insideELSE = 0;
+// export let insideELSE = 0;
 
 export const changeReturnedFunction = (type) => {
   returnedFunction = type;
+}
+
+export const changeAuxReturnedFunction = (type) => {
+  returnedFunctionAux = type;
 }
 
 export const addInFunctionPile = (token) => functionPile.push(token);
@@ -65,15 +71,15 @@ export const resetInFunctionPile = () => functionPile = [];
 
 export const checkFunctionReturn = (token) => functionPile[functionPile.length - 1].lexeme === token;
 
-export const changeInsideIf = (number) => {
-  // console.log('numberIf', number);
-  insideIF = number
-};
+// export const changeInsideIf = (number) => {
+//   // console.log('numberIf', number);
+//   insideIF = number
+// };
 
-export const changeInsideElse = (number) => {
-  // console.log('numberElse', number);
-  insideELSE = number
-};
+// export const changeInsideElse = (number) => {
+//   // console.log('numberElse', number);
+//   insideELSE = number
+// };
 
 // ------------------------------------------------------ TABELA DE SÍMBOLOS ------------------------------------------------------------
 
