@@ -1,6 +1,5 @@
 import * as SyntacticalAnalysis from '../syntactical/analisys';
 import * as CodeGeneration from '../codeGeneration';
-import { write } from 'fs';
 
 const posFixPrecedence = [
   { lexeme: '-u', order: 7, read: 1, type: 'inteiro', return: 'inteiro', code: 'INV' },

@@ -2,7 +2,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /*eslint-disable no-alert, no-console */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import AceEditor from "react-ace";
 
 import "ace-builds/src-noconflict/mode-text";
